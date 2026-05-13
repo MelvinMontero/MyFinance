@@ -8,7 +8,7 @@ import {
   Receipt,
   Wallet,
 } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -82,14 +82,14 @@ export default function HomeScreen() {
    * En vista quincenal todos los montos se muestran como promedio por
    * paycheck (mensual / 2). El conteo "X de Y pagados" no cambia (es
    * stateful no monetario). Las etiquetas se ajustan también.
+   * NO uso useCallback ni useMemo acá — funciones simples y baratas, y
+   * useCallback con dep [viewMode] aparentemente choca con Fast Refresh
+   * de Expo Router en algún edge case.
    */
-  const halve = useCallback(
-    (cents: number) =>
-      viewMode === 'biweekly' ? Math.round(cents / 2) : cents,
-    [viewMode],
-  );
+  const halve = (cents: number): number =>
+    viewMode === 'biweekly' ? Math.round(cents / 2) : cents;
   const periodSuffix = viewMode === 'biweekly' ? 'por quincena' : 'este mes';
-  const periodLabel = useMemo(() => formatPeriodLabel(currentPeriod()), []);
+  const periodLabel = formatPeriodLabel(currentPeriod());
 
   if (status === 'loading') {
     return (
