@@ -1,6 +1,6 @@
 {
   "name": "myfinance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -20,9 +20,11 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@react-native-community/datetimepicker": "8.4.4",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
+    "expo-crypto": "~15.0.9",
     "expo-linking": "~8.0.12",
     "expo-localization": "~17.0.8",
     "expo-router": "~6.0.23",

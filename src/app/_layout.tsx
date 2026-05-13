@@ -10,8 +10,26 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="income/new"
+            options={{
+              presentation: 'modal',
+              title: 'Nuevo ingreso',
+              headerStyle: { backgroundColor: '#ffffff' },
+              headerTitleStyle: { fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="income/[id]"
+            options={{
+              presentation: 'modal',
+              title: 'Editar ingreso',
+              headerStyle: { backgroundColor: '#ffffff' },
+              headerTitleStyle: { fontWeight: '700' },
+            }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

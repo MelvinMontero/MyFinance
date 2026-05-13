@@ -2,7 +2,7 @@
   "expo": {
     "name": "MyFinance",
     "slug": "myfinance",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "scheme": "myfinance",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -26,10 +26,8 @@
       "expo-router",
       "expo-sqlite",
       "expo-secure-store",
-      "expo-localization"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+      "expo-localization",
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

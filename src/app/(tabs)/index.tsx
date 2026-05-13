@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  getIncomeCount,
+  getOccurrenceCount,
+} from '@/features/incomes/repository';
 import { getCategoryCount, getSettings, initDb } from '@/shared/db';
 import type { Settings } from '@/shared/db/types';
 
@@ -10,9 +15,12 @@ type Status = 'loading' | 'ready' | 'error';
 export default function HomeScreen() {
   const [status, setStatus] = useState<Status>('loading');
   const [categoryCount, setCategoryCount] = useState<number | null>(null);
+  const [incomeCount, setIncomeCount] = useState<number>(0);
+  const [occCount, setOccCount] = useState<number>(0);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Init de DB una sola vez
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -33,6 +41,30 @@ export default function HomeScreen() {
       cancelled = true;
     };
   }, []);
+
+  // Refrescar conteo de ingresos cada vez que la pantalla recibe foco
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const [incCount, oCount] = await Promise.all([
+            getIncomeCount(),
+            getOccurrenceCount(),
+          ]);
+          if (!cancelled) {
+            setIncomeCount(incCount);
+            setOccCount(oCount);
+          }
+        } catch {
+          /* silent — el dashboard sigue mostrando los demás datos */
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   if (status === 'loading') {
     return (
@@ -56,12 +88,16 @@ export default function HomeScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerClassName="px-6 py-10">
         <Text className="text-3xl font-bold text-gray-900">MyFinance</Text>
-        <Text className="mt-2 text-base text-gray-500">Fase 1 — Setup + DB</Text>
+        <Text className="mt-2 text-base text-gray-500">Fase 2 — Ingresos</Text>
 
         <View className="mt-8 rounded-2xl bg-emerald-50 p-5">
           <Text className="text-sm uppercase tracking-wide text-emerald-700">Estado</Text>
           <Text className="mt-1 text-xl font-semibold text-emerald-900">
-            DB inicializada — {categoryCount} categorías cargadas
+            DB inicializada — {categoryCount} categorías
+          </Text>
+          <Text className="mt-1 text-base text-emerald-800">
+            {incomeCount} {incomeCount === 1 ? 'ingreso activo' : 'ingresos activos'} ·{' '}
+            {occCount} {occCount === 1 ? 'ocurrencia' : 'ocurrencias'} proyectadas
           </Text>
         </View>
 
