@@ -4,6 +4,45 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-13 — Fase 6: Reportes y gráficos
+
+### Added — Tab "Reportes"
+- **6ta tab** (`BarChart3` icon) con dos vistas: Mensual / Anual.
+- **Selector de período** con flechas `← Mes/Año →`. Persiste por modo (mes y año tienen su propia navegación independiente).
+- **Patrón de estado aislado** (`ReportsContent` como hijo) para evitar el bug de `printUpgradeWarning` de expo-router que vimos en Home — mismo workaround.
+
+### Repositorio (`features/reports/repository.ts`)
+- `getMonthlyVariableBreakdown(period, currency)` — GROUP BY categoría con JOIN a categories, ordenado de mayor a menor.
+- `getYearlyBudget(year, currency, savingsPercent)` — itera los 12 meses y delega a `getBudgetForPeriod`. Reusa la lógica de Fase 4.
+- `getYearlyKpis(year, currency, savingsPercent)` — totales, mes con más gasto, promedio mensual de extras.
+
+### Vista Mensual
+- **Donut chart** (`PieChart` de gifted-charts) con la distribución de gastos extras por categoría. Center label muestra total del mes.
+- **Top 5 categorías** con icono colorido, monto, porcentaje del total y conteo de gastos. Cada fila incluye una mini barra de progreso.
+- Empty state con icono y CTA explicativa cuando no hay gastos en el mes.
+
+### Vista Anual
+- **Barras apiladas** (`BarChart` de gifted-charts con `stackData`) — 12 barras (Ene…Dic) con tres segmentos: ahorro (emerald), fijos (blue), variables gastados (amber). Legend abajo.
+- **4 KPIs**:
+  - Ahorro objetivo del año (suma de targets).
+  - Total gastado (fijos + variables, con desglose en subtitle).
+  - Mes con más gasto (nombre + monto).
+  - Promedio mensual de extras (solo meses con datos, para no diluir).
+- Empty state cuando no hay datos para el año.
+
+### Multi-moneda
+- Los reportes filtran por la moneda activa de Settings (igual que el dashboard).
+- Records en otras monedas no aparecen en estos reportes.
+
+### Layout
+- Tabs ahora tienen 6 destinos: Inicio · Ingresos · Fijos · Extras · Reportes · Ajustes. Reduje `tabBarLabelStyle.fontSize` a 11 para que los labels quepan en pantalla.
+
+### Verificaciones
+- `npx tsc --noEmit`: 0 errores.
+- `npm test`: 59/59.
+- `npm run lint`: 0 warnings.
+- `npx expo-doctor`: 17/17.
+
 ## [0.6.0] - 2026-05-13 — Fase 5: Gastos extras + toggle Mensual/Quincenal
 
 ### Added — Toggle Mensual/Quincenal en Inicio

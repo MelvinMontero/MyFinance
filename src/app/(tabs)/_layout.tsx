@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import {
+  BarChart3,
   Home,
   Receipt,
   Settings as SettingsIcon,
@@ -13,6 +14,7 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: '#059669',
         tabBarInactiveTintColor: '#94a3b8',
+        tabBarLabelStyle: { fontSize: 11 },
         headerShown: false,
       }}
     >
@@ -42,6 +44,13 @@ export default function TabsLayout() {
         options={{
           title: 'Extras',
           tabBarIcon: ({ color, size }) => <ShoppingBag color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: 'Reportes',
+          tabBarIcon: ({ color, size }) => <BarChart3 color={color} size={size} />,
         }}
       />
       <Tabs.Screen
