@@ -48,6 +48,24 @@ export default function RootLayout() {
               headerTitleStyle: { fontWeight: '700' },
             }}
           />
+          <Stack.Screen
+            name="variable-expense/new"
+            options={{
+              presentation: 'modal',
+              title: 'Nuevo gasto extra',
+              headerStyle: { backgroundColor: '#ffffff' },
+              headerTitleStyle: { fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="variable-expense/[id]"
+            options={{
+              presentation: 'modal',
+              title: 'Editar gasto extra',
+              headerStyle: { backgroundColor: '#ffffff' },
+              headerTitleStyle: { fontWeight: '700' },
+            }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

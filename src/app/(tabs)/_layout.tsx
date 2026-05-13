@@ -3,6 +3,7 @@ import {
   Home,
   Receipt,
   Settings as SettingsIcon,
+  ShoppingBag,
   Wallet,
 } from 'lucide-react-native';
 
@@ -34,6 +35,13 @@ export default function TabsLayout() {
         options={{
           title: 'Fijos',
           tabBarIcon: ({ color, size }) => <Receipt color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="extras"
+        options={{
+          title: 'Extras',
+          tabBarIcon: ({ color, size }) => <ShoppingBag color={color} size={size} />,
         }}
       />
       <Tabs.Screen
