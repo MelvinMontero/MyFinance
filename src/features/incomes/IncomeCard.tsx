@@ -3,7 +3,7 @@ import { es } from 'date-fns/locale';
 import { ChevronRight } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
-import { useFormatCents } from '@/shared/hooks/useFormatCents';
+import { formatCents } from '@/shared/utils/money';
 
 import type { Income } from '@/shared/db/types';
 
@@ -19,7 +19,6 @@ interface Props {
 }
 
 export function IncomeCard({ income, onPress }: Props) {
-  const formatCents = useFormatCents();
   return (
     <Pressable
       onPress={onPress}
@@ -32,7 +31,7 @@ export function IncomeCard({ income, onPress }: Props) {
             {income.source ?? 'Ingreso sin nombre'}
           </Text>
           <Text className="ml-2 text-base font-bold text-emerald-700">
-            {formatCents(income.amount_cents)}
+            {formatCents(income.amount_cents, { currency: income.currency })}
           </Text>
         </View>
         <Text className="mt-1 text-sm text-gray-500">

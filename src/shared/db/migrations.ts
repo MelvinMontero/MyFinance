@@ -103,4 +103,13 @@ export const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_incomes_active ON incomes(is_active);
     `,
   },
+  {
+    version: 2,
+    description: 'moneda por fila en incomes, fixed_expenses y variable_expenses',
+    sql: `
+      ALTER TABLE incomes ADD COLUMN currency TEXT NOT NULL DEFAULT 'CRC';
+      ALTER TABLE fixed_expenses ADD COLUMN currency TEXT NOT NULL DEFAULT 'CRC';
+      ALTER TABLE variable_expenses ADD COLUMN currency TEXT NOT NULL DEFAULT 'CRC';
+    `,
+  },
 ];

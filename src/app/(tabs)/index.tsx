@@ -4,6 +4,10 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  getFixedExpenseCount,
+  getPaymentSummary,
+} from '@/features/fixed-expenses/repository';
+import {
   getIncomeCount,
   getOccurrenceCount,
 } from '@/features/incomes/repository';
@@ -18,6 +22,8 @@ export default function HomeScreen() {
   const [categoryCount, setCategoryCount] = useState<number | null>(null);
   const [incomeCount, setIncomeCount] = useState<number>(0);
   const [occCount, setOccCount] = useState<number>(0);
+  const [fixedCount, setFixedCount] = useState<number>(0);
+  const [paidThisMonth, setPaidThisMonth] = useState<number>(0);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // Estos vienen del store reactivo — se actualizan cuando cambiás en Ajustes.
@@ -50,19 +56,23 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Refrescar conteo de ingresos cada vez que la pantalla recibe foco
+  // Refrescar conteos cada vez que la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       (async () => {
         try {
-          const [incCount, oCount] = await Promise.all([
+          const [incCount, oCount, fxCount, summary] = await Promise.all([
             getIncomeCount(),
             getOccurrenceCount(),
+            getFixedExpenseCount(),
+            getPaymentSummary(),
           ]);
           if (!cancelled) {
             setIncomeCount(incCount);
             setOccCount(oCount);
+            setFixedCount(fxCount);
+            setPaidThisMonth(summary.paid);
           }
         } catch {
           /* silent — el dashboard sigue mostrando los demás datos */
@@ -96,16 +106,36 @@ export default function HomeScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerClassName="px-6 py-10">
         <Text className="text-3xl font-bold text-gray-900">MyFinance</Text>
-        <Text className="mt-2 text-base text-gray-500">Fase 2 — Ingresos</Text>
+        <Text className="mt-2 text-base text-gray-500">Fase 3 — Gastos fijos</Text>
 
         <View className="mt-8 rounded-2xl bg-emerald-50 p-5">
-          <Text className="text-sm uppercase tracking-wide text-emerald-700">Estado</Text>
+          <Text className="text-sm uppercase tracking-wide text-emerald-700">Ingresos</Text>
           <Text className="mt-1 text-xl font-semibold text-emerald-900">
-            DB inicializada — {categoryCount} categorías
+            {incomeCount} {incomeCount === 1 ? 'activo' : 'activos'}
           </Text>
-          <Text className="mt-1 text-base text-emerald-800">
-            {incomeCount} {incomeCount === 1 ? 'ingreso activo' : 'ingresos activos'} ·{' '}
-            {occCount} {occCount === 1 ? 'ocurrencia' : 'ocurrencias'} proyectadas
+          <Text className="mt-1 text-sm text-emerald-800">
+            {occCount} {occCount === 1 ? 'ocurrencia proyectada' : 'ocurrencias proyectadas'}
+          </Text>
+        </View>
+
+        <View className="mt-4 rounded-2xl bg-blue-50 p-5">
+          <Text className="text-sm uppercase tracking-wide text-blue-700">Gastos fijos</Text>
+          <Text className="mt-1 text-xl font-semibold text-blue-900">
+            {paidThisMonth} de {fixedCount} pagados este mes
+          </Text>
+          <Text className="mt-1 text-sm text-blue-800">
+            {fixedCount === 0
+              ? 'Sin gastos fijos aún'
+              : fixedCount - paidThisMonth === 0
+                ? '¡Todo al día!'
+                : `${fixedCount - paidThisMonth} ${fixedCount - paidThisMonth === 1 ? 'pendiente' : 'pendientes'} en lo que va del mes`}
+          </Text>
+        </View>
+
+        <View className="mt-4 rounded-2xl bg-gray-100 p-5">
+          <Text className="text-sm uppercase tracking-wide text-gray-700">Catálogo</Text>
+          <Text className="mt-1 text-sm text-gray-700">
+            {categoryCount} categorías cargadas
           </Text>
         </View>
 
@@ -115,7 +145,9 @@ export default function HomeScreen() {
             <Text className="mt-1 text-base text-gray-900">
               Ahorro objetivo: {liveSavingsPercent}%
             </Text>
-            <Text className="text-base text-gray-900">Moneda: {liveCurrency}</Text>
+            <Text className="text-base text-gray-900">
+              Moneda por defecto: {liveCurrency}
+            </Text>
             <Text className="text-base text-gray-900">Tema: {settings.theme}</Text>
           </View>
         )}

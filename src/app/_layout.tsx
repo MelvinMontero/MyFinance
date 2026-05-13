@@ -30,6 +30,24 @@ export default function RootLayout() {
               headerTitleStyle: { fontWeight: '700' },
             }}
           />
+          <Stack.Screen
+            name="fixed-expense/new"
+            options={{
+              presentation: 'modal',
+              title: 'Nuevo gasto fijo',
+              headerStyle: { backgroundColor: '#ffffff' },
+              headerTitleStyle: { fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="fixed-expense/[id]"
+            options={{
+              presentation: 'modal',
+              title: 'Editar gasto fijo',
+              headerStyle: { backgroundColor: '#ffffff' },
+              headerTitleStyle: { fontWeight: '700' },
+            }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

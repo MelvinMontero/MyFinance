@@ -4,15 +4,20 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'r
 import { IncomeForm } from '@/features/incomes/IncomeForm';
 import { createIncome } from '@/features/incomes/repository';
 import type { IncomeFormValues } from '@/features/incomes/schemas';
+import { useSettings } from '@/features/settings/store';
+import { isSupportedCurrency } from '@/shared/utils/currency';
 import { toCents } from '@/shared/utils/money';
 
 export default function NewIncomeScreen() {
   const router = useRouter();
+  const defaultCurrency = useSettings((s) => s.currency);
+  const safeDefaultCurrency = isSupportedCurrency(defaultCurrency) ? defaultCurrency : 'CRC';
 
   async function handleSubmit(values: IncomeFormValues) {
     try {
       const { occurrences } = await createIncome({
         amount_cents: toCents(values.amount),
+        currency: values.currency,
         source: values.source?.trim() ? values.source.trim() : null,
         frequency: values.frequency,
         start_date: values.start_date,
@@ -54,7 +59,11 @@ export default function NewIncomeScreen() {
           </Text>
         </View>
         <View className="mt-4">
-          <IncomeForm onSubmit={handleSubmit} submitLabel="Guardar ingreso" />
+          <IncomeForm
+            onSubmit={handleSubmit}
+            submitLabel="Guardar ingreso"
+            defaultValues={{ currency: safeDefaultCurrency }}
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

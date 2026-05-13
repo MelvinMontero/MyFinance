@@ -12,6 +12,7 @@ import { generateOccurrences } from './occurrences';
 
 export interface NewIncomeInput {
   amount_cents: number;
+  currency: string;
   source?: string | null;
   frequency: IncomeFrequency;
   start_date: string; // 'yyyy-MM-dd'
@@ -21,6 +22,7 @@ export interface NewIncomeInput {
 
 export interface UpdateIncomeInput {
   amount_cents?: number;
+  currency?: string;
   source?: string | null;
   start_date?: string;
   end_date?: string | null;
@@ -42,6 +44,7 @@ export async function createIncome(input: NewIncomeInput): Promise<{
   const income: Income = {
     id: randomUUID(),
     amount_cents: input.amount_cents,
+    currency: input.currency,
     source: input.source ?? null,
     frequency: input.frequency,
     start_date: input.start_date,
@@ -60,10 +63,11 @@ export async function createIncome(input: NewIncomeInput): Promise<{
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      `INSERT INTO incomes (id, amount_cents, source, frequency, start_date, end_date, is_active, note, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO incomes (id, amount_cents, currency, source, frequency, start_date, end_date, is_active, note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       income.id,
       income.amount_cents,
+      income.currency,
       income.source,
       income.frequency,
       income.start_date,
@@ -124,6 +128,10 @@ export async function updateIncome(id: string, patch: UpdateIncomeInput): Promis
   if (patch.amount_cents !== undefined) {
     sets.push('amount_cents = ?');
     args.push(patch.amount_cents);
+  }
+  if (patch.currency !== undefined) {
+    sets.push('currency = ?');
+    args.push(patch.currency);
   }
   if (patch.source !== undefined) {
     sets.push('source = ?');

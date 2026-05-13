@@ -86,13 +86,14 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* MONEDA */}
+        {/* MONEDA POR DEFECTO */}
         <View className="mt-4 rounded-2xl bg-white p-5">
           <Text className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-            Moneda
+            Moneda por defecto
           </Text>
           <Text className="mt-1 text-sm text-gray-500">
-            Cambia el símbolo y formato. No convierte los montos ya registrados.
+            Es la moneda preseleccionada al crear un nuevo ingreso o gasto. Podés
+            elegir otra para cada registro individual.
           </Text>
 
           <View className="mt-4 gap-2">
@@ -151,12 +152,12 @@ export default function SettingsScreen() {
         </View>
 
         {/* NOTA */}
-        <View className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <Text className="text-sm font-semibold text-amber-900">Importante</Text>
-          <Text className="mt-1 text-sm text-amber-800">
-            Cambiar la moneda solo afecta cómo se muestran los montos. Los valores
-            guardados no se convierten — si tenés ingresos mezclados en CRC y USD,
-            avisame y agrego soporte de moneda por ingreso.
+        <View className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <Text className="text-sm font-semibold text-emerald-900">Moneda por registro</Text>
+          <Text className="mt-1 text-sm text-emerald-800">
+            Cada ingreso, gasto fijo y gasto variable guarda su propia moneda. Cambiar
+            la default acá no toca los registros ya creados — solo afecta el valor
+            preseleccionado en los formularios nuevos.
           </Text>
         </View>
       </ScrollView>

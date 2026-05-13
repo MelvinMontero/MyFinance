@@ -34,6 +34,7 @@ export interface Income {
   end_date: string | null;
   is_active: SqliteBoolean;
   note: string | null;
+  currency: string; // ISO 4217 — agregado en migración v2
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +57,7 @@ export interface FixedExpense {
   is_active: SqliteBoolean;
   start_date: string;
   end_date: string | null;
+  currency: string; // ISO 4217 — agregado en migración v2
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +77,7 @@ export interface VariableExpense {
   category_id: string;
   occurred_at: string;
   note: string | null;
+  currency: string; // ISO 4217 — agregado en migración v2
   created_at: string;
   updated_at: string;
 }

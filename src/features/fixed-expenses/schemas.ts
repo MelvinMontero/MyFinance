@@ -4,12 +4,13 @@ import { SUPPORTED_CURRENCIES } from '@/shared/utils/currency';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-export const incomeFormSchema = z
+export const fixedExpenseFormSchema = z
   .object({
-    /**
-     * Monto en la moneda elegida, con decimales (no centavos).
-     * Se convierte a centavos con `toCents` antes de persistir.
-     */
+    name: z
+      .string()
+      .trim()
+      .min(1, 'El nombre es requerido')
+      .max(100, 'Máximo 100 caracteres'),
     amount: z
       .number({ message: 'El monto es requerido' })
       .positive('El monto debe ser mayor que cero')
@@ -17,15 +18,12 @@ export const incomeFormSchema = z
     currency: z.enum(SUPPORTED_CURRENCIES, {
       message: 'Moneda inválida',
     }),
-    source: z
-      .string()
-      .trim()
-      .max(100, 'Máximo 100 caracteres')
-      .optional()
-      .or(z.literal('')),
-    frequency: z.enum(['one_time', 'biweekly', 'monthly'], {
-      message: 'Elegí una frecuencia',
-    }),
+    category_id: z.string().min(1, 'Elegí una categoría'),
+    due_day: z
+      .number({ message: 'El día de pago es requerido' })
+      .int('Debe ser un número entero')
+      .min(1, 'Día mínimo 1')
+      .max(31, 'Día máximo 31'),
     start_date: z
       .string()
       .regex(ISO_DATE, 'Fecha inválida (formato yyyy-MM-dd)'),
@@ -34,7 +32,6 @@ export const incomeFormSchema = z
       .regex(ISO_DATE, 'Fecha inválida (formato yyyy-MM-dd)')
       .optional()
       .or(z.literal('')),
-    note: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
   })
   .refine(
     (data) => {
@@ -47,13 +44,4 @@ export const incomeFormSchema = z
     },
   );
 
-export type IncomeFormValues = z.infer<typeof incomeFormSchema>;
-
-export const occurrenceAmountSchema = z.object({
-  amount: z
-    .number({ message: 'El monto es requerido' })
-    .positive('El monto debe ser mayor que cero')
-    .finite(),
-});
-
-export type OccurrenceAmountValues = z.infer<typeof occurrenceAmountSchema>;
+export type FixedExpenseFormValues = z.infer<typeof fixedExpenseFormSchema>;

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 
-import { useCurrency, useFormatCents } from '@/shared/hooks/useFormatCents';
 import { currencySymbol } from '@/shared/utils/currency';
-import { fromCents, parseAmount, toCents } from '@/shared/utils/money';
+import { formatCents, fromCents, parseAmount, toCents } from '@/shared/utils/money';
 
 interface Props {
   visible: boolean;
@@ -11,6 +10,8 @@ interface Props {
   initialAmountCents: number;
   /** Monto del ingreso recurrente (para mostrar como referencia). */
   baselineAmountCents: number;
+  /** Moneda del ingreso padre (CRC, USD, …). */
+  currency: string;
   onCancel: () => void;
   onSave: (newAmountCents: number) => void;
 }
@@ -23,11 +24,10 @@ export function OverrideAmountModal({
   visible,
   initialAmountCents,
   baselineAmountCents,
+  currency,
   onCancel,
   onSave,
 }: Props) {
-  const formatCents = useFormatCents();
-  const currency = useCurrency();
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +94,7 @@ export function OverrideAmountModal({
           {error && <Text className="mt-1 text-sm text-red-600">{error}</Text>}
 
           <Text className="mt-3 text-sm text-gray-500">
-            Monto base del ingreso: {formatCents(baselineAmountCents)}
+            Monto base del ingreso: {formatCents(baselineAmountCents, { currency })}
           </Text>
 
           {isOverridden && (

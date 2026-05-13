@@ -19,6 +19,7 @@ function income(overrides: Partial<Income> = {}): Income {
     end_date: null,
     is_active: 1,
     note: null,
+    currency: 'CRC',
     created_at: FIXED_NOW,
     updated_at: FIXED_NOW,
     ...overrides,

@@ -3,18 +3,24 @@ import { es } from 'date-fns/locale';
 import { Check } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
-import { useFormatCents } from '@/shared/hooks/useFormatCents';
+import { formatCents } from '@/shared/utils/money';
 
 import type { IncomeOccurrence } from '@/shared/db/types';
 
 interface Props {
   occurrences: IncomeOccurrence[];
+  /** Moneda del ingreso padre — todas las ocurrencias comparten esta moneda. */
+  currency: string;
   onToggleConfirm: (id: string, newValue: boolean) => void;
   onPressAmount?: (occurrence: IncomeOccurrence) => void;
 }
 
-export function OccurrencesList({ occurrences, onToggleConfirm, onPressAmount }: Props) {
-  const formatCents = useFormatCents();
+export function OccurrencesList({
+  occurrences,
+  currency,
+  onToggleConfirm,
+  onPressAmount,
+}: Props) {
   if (occurrences.length === 0) {
     return (
       <View className="items-center rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-8">
@@ -71,7 +77,7 @@ export function OccurrencesList({ occurrences, onToggleConfirm, onPressAmount }:
               className="ml-2 rounded-lg px-2 py-1 active:bg-gray-100"
             >
               <Text className="text-base font-semibold text-gray-900">
-                {formatCents(occ.amount_cents)}
+                {formatCents(occ.amount_cents, { currency })}
               </Text>
             </Pressable>
           </View>

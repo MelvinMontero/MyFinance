@@ -1,5 +1,10 @@
 import { Tabs } from 'expo-router';
-import { Home, Settings as SettingsIcon, Wallet } from 'lucide-react-native';
+import {
+  Home,
+  Receipt,
+  Settings as SettingsIcon,
+  Wallet,
+} from 'lucide-react-native';
 
 export default function TabsLayout() {
   return (
@@ -22,6 +27,13 @@ export default function TabsLayout() {
         options={{
           title: 'Ingresos',
           tabBarIcon: ({ color, size }) => <Wallet color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="fixed-expenses"
+        options={{
+          title: 'Fijos',
+          tabBarIcon: ({ color, size }) => <Receipt color={color} size={size} />,
         }}
       />
       <Tabs.Screen

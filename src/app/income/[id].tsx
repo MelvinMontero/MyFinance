@@ -25,6 +25,7 @@ import {
 } from '@/features/incomes/repository';
 import type { IncomeFormValues } from '@/features/incomes/schemas';
 import type { Income, IncomeOccurrence } from '@/shared/db/types';
+import { isSupportedCurrency } from '@/shared/utils/currency';
 import { fromCents, toCents } from '@/shared/utils/money';
 
 export default function EditIncomeScreen() {
@@ -57,6 +58,7 @@ export default function EditIncomeScreen() {
     try {
       await updateIncome(income.id, {
         amount_cents: toCents(values.amount),
+        currency: values.currency,
         source: values.source?.trim() ? values.source.trim() : null,
         start_date: values.start_date,
         end_date: values.end_date && values.end_date.trim() !== '' ? values.end_date : null,
@@ -143,6 +145,7 @@ export default function EditIncomeScreen() {
           onSubmit={handleUpdate}
           defaultValues={{
             amount: fromCents(income.amount_cents),
+            currency: isSupportedCurrency(income.currency) ? income.currency : 'CRC',
             source: income.source ?? '',
             frequency: income.frequency,
             start_date: income.start_date,
@@ -161,6 +164,7 @@ export default function EditIncomeScreen() {
           </Text>
           <OccurrencesList
             occurrences={occurrences}
+            currency={income.currency}
             onToggleConfirm={handleToggleConfirm}
             onPressAmount={setEditingOcc}
           />
@@ -183,6 +187,7 @@ export default function EditIncomeScreen() {
         visible={editingOcc !== null}
         initialAmountCents={editingOcc?.amount_cents ?? 0}
         baselineAmountCents={income.amount_cents}
+        currency={income.currency}
         onCancel={() => setEditingOcc(null)}
         onSave={handleOverrideSave}
       />
