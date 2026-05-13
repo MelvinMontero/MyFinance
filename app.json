@@ -2,7 +2,7 @@
   "expo": {
     "name": "MyFinance",
     "slug": "myfinance",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "scheme": "myfinance",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -27,7 +27,14 @@
       "expo-sqlite",
       "expo-secure-store",
       "expo-localization",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permitir a $(PRODUCT_NAME) usar Face ID para proteger tu información."
+        }
+      ],
+      "expo-notifications"
     ]
   }
 }

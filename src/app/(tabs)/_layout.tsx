@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import {
   BarChart3,
   Home,
@@ -8,7 +8,21 @@ import {
   Wallet,
 } from 'lucide-react-native';
 
+import { useAppSession } from '@/features/auth/session';
+import { useSettings } from '@/features/settings/store';
+
 export default function TabsLayout() {
+  const onboardingDone = useSettings((s) => s.onboarding_completed);
+  const biometricEnabled = useSettings((s) => s.biometric_enabled);
+  const unlocked = useAppSession((s) => s.unlocked);
+
+  if (!onboardingDone) {
+    return <Redirect href="/onboarding" />;
+  }
+  if (biometricEnabled && !unlocked) {
+    return <Redirect href="/lock" />;
+  }
+
   return (
     <Tabs
       screenOptions={{

@@ -11,6 +11,9 @@ export interface Settings {
   savings_percent: number;
   currency: string;
   theme: ThemePreference;
+  biometric_enabled: SqliteBoolean;
+  notifications_enabled: SqliteBoolean;
+  onboarding_completed: SqliteBoolean;
   created_at: string;
   updated_at: string;
 }

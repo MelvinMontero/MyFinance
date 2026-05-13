@@ -4,6 +4,64 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-13 — Fase 7: Polish (parte 1)
+
+### Added — Onboarding
+- 3 slides al primer arranque (`src/app/onboarding.tsx`): bienvenida, modelo de sobres, "comenzar". Botón "Saltar" disponible. Dots indicator + flecha "Siguiente".
+- Estado persistido en `settings.onboarding_completed` (migración v3). Una vez completado no se vuelve a mostrar.
+
+### Added — Bloqueo biométrico
+- Toggle en Ajustes → "Bloqueo biométrico". Verifica `hasHardware` + `isEnrolled` antes de activarse; muestra alert claro si faltan.
+- Pantalla `src/app/lock.tsx` con auto-prompt al montar (huella/cara). Botón "Desbloquear" para reintentar. Fondo oscuro tipo "estado seguro".
+- `(tabs)/_layout.tsx` redirige a `/lock` si está activado y la sesión no está desbloqueada.
+- Estado de "unlocked" vive en memoria (`useAppSession`) — se resetea al matar la app, así cada arranque pide biometría de nuevo.
+
+### Added — Notificaciones locales
+- Toggle en Ajustes → "Recordatorios de gastos fijos". Pide permiso de notificaciones; si se rechaza, alert con instrucciones.
+- Programa 2 avisos por gasto fijo activo en la moneda actual: **3 días antes** del día de vencimiento + el **día mismo** a las 9am.
+- Cálculo del próximo `due date` clampa el día al último del mes si el mes no tiene ese día (ej. day=31 en febrero → 28/29).
+- Re-programar al activar; cancelar todo al desactivar.
+
+### Added — Backup JSON
+- Export desde Ajustes → genera `myfinance-backup-{fecha}.json` con todas las tablas y abre el sheet de "compartir" (Drive, email, descargas).
+- Import desde Ajustes → DocumentPicker para elegir archivo .json. Valida `app: 'myfinance'` y versión, después SOBRESCRIBE las tablas dentro de una transacción.
+- Confirmación destructive antes de importar. Recarga el store de settings tras éxito.
+- **Sin cifrar** — TODO Fase 8: derivar key con PBKDF2 desde un PIN y cifrar con AES.
+
+### Added — Tema oscuro (infraestructura + Ajustes)
+- `tailwind.config.js` ahora con `darkMode: 'class'`.
+- Root layout llama `colorScheme.set(theme)` cada vez que cambia `settings.theme`.
+- Picker "Sistema / Claro / Oscuro" en Ajustes con los icons Smartphone/Sun/Moon.
+- **Scope acotado**: el modo oscuro está aplicado solo en la pantalla Ajustes. Otras pantallas migran en v0.9. (Es invasivo: ~20 archivos con classNames.)
+
+### Migración v3
+- Columnas agregadas a `settings`:
+  - `biometric_enabled INTEGER NOT NULL DEFAULT 0`
+  - `notifications_enabled INTEGER NOT NULL DEFAULT 0`
+  - `onboarding_completed INTEGER NOT NULL DEFAULT 0`
+
+### Plugins app.json
+- `expo-local-authentication` (con permiso Face ID en es)
+- `expo-notifications`
+
+### Dependencias
+- expo-local-authentication
+- expo-file-system (usado vía `/legacy` para mantener `cacheDirectory` y `EncodingType` — el API nuevo de v19 con `Paths`/`File` queda para v0.9)
+- expo-sharing
+- expo-document-picker
+- expo-notifications
+
+### Pendiente para v0.9 (Fase 7 cont.)
+- Dark mode en el resto de pantallas (Inicio, Ingresos, Fijos, Extras, Reportes, formularios, modales).
+- PIN encryption del backup (PBKDF2 + AES via expo-crypto).
+- Animaciones Reanimated en transiciones (skipped por scope).
+
+### Verificaciones
+- `npx tsc --noEmit`: 0 errores.
+- `npm test`: 59/59.
+- `npm run lint`: 0 warnings.
+- `npx expo-doctor`: 17/17.
+
 ## [0.7.0] - 2026-05-13 — Fase 6: Reportes y gráficos
 
 ### Added — Tab "Reportes"

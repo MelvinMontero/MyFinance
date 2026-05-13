@@ -47,6 +47,9 @@ export interface UpdateSettingsInput {
   savings_percent?: number;
   currency?: string;
   theme?: Settings['theme'];
+  biometric_enabled?: boolean;
+  notifications_enabled?: boolean;
+  onboarding_completed?: boolean;
 }
 
 /**
@@ -68,6 +71,18 @@ export async function updateSettings(patch: UpdateSettingsInput): Promise<void> 
   if (patch.theme !== undefined) {
     sets.push('theme = ?');
     args.push(patch.theme);
+  }
+  if (patch.biometric_enabled !== undefined) {
+    sets.push('biometric_enabled = ?');
+    args.push(patch.biometric_enabled ? 1 : 0);
+  }
+  if (patch.notifications_enabled !== undefined) {
+    sets.push('notifications_enabled = ?');
+    args.push(patch.notifications_enabled ? 1 : 0);
+  }
+  if (patch.onboarding_completed !== undefined) {
+    sets.push('onboarding_completed = ?');
+    args.push(patch.onboarding_completed ? 1 : 0);
   }
   if (sets.length === 0) return;
 

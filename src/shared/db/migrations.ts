@@ -112,4 +112,13 @@ export const migrations: Migration[] = [
       ALTER TABLE variable_expenses ADD COLUMN currency TEXT NOT NULL DEFAULT 'CRC';
     `,
   },
+  {
+    version: 3,
+    description: 'flags de Fase 7: biometría, notificaciones, onboarding completado',
+    sql: `
+      ALTER TABLE settings ADD COLUMN biometric_enabled INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE settings ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE settings ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
 ];
