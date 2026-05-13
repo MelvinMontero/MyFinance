@@ -64,7 +64,7 @@ export default function HomeScreen() {
           const period = currentPeriod();
           const [b, summary] = await Promise.all([
             getBudgetForPeriod(period, liveCurrency, liveSavingsPercent),
-            getPaymentSummary(period),
+            getPaymentSummary(period, liveCurrency),
           ]);
           if (cancelled) return;
           setBudget(b);

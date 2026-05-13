@@ -260,20 +260,46 @@ export async function getFixedExpenseCount(): Promise<number> {
   return row?.count ?? 0;
 }
 
+/**
+ * Cuenta gastos vigentes en el período (start_date <= período Y end_date >= período o NULL)
+ * y cuántos están pagados. Opcionalmente filtra por moneda — el Home pasa la moneda
+ * actual para que los números cuadren con el sobre de Gastos Fijos.
+ */
 export async function getPaymentSummary(
   period: string = currentPeriod(),
+  currency?: string,
 ): Promise<{ total: number; paid: number }> {
   const db = await getDb();
+
+  const currencyCond = currency ? 'AND currency = ?' : '';
+  const totalArgs: (string | number)[] = currency ? [period, period, currency] : [period, period];
+
   const total = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM fixed_expenses WHERE is_active = 1',
+    `SELECT COUNT(*) as count FROM fixed_expenses
+      WHERE is_active = 1
+        AND substr(start_date, 1, 7) <= ?
+        AND (end_date IS NULL OR substr(end_date, 1, 7) >= ?)
+        ${currencyCond}`,
+    ...totalArgs,
   );
+
+  const paidCurrencyCond = currency ? 'AND fe.currency = ?' : '';
+  const paidArgs: (string | number)[] = currency
+    ? [period, period, period, currency]
+    : [period, period, period];
+
   const paid = await db.getFirstAsync<{ count: number }>(
     `SELECT COUNT(DISTINCT fep.fixed_expense_id) as count
        FROM fixed_expense_payments fep
        JOIN fixed_expenses fe ON fe.id = fep.fixed_expense_id
-      WHERE fep.period = ? AND fe.is_active = 1`,
-    period,
+      WHERE fep.period = ?
+        AND fe.is_active = 1
+        AND substr(fe.start_date, 1, 7) <= ?
+        AND (fe.end_date IS NULL OR substr(fe.end_date, 1, 7) >= ?)
+        ${paidCurrencyCond}`,
+    ...paidArgs,
   );
+
   return {
     total: total?.count ?? 0,
     paid: paid?.count ?? 0,

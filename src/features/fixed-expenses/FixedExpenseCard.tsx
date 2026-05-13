@@ -1,4 +1,6 @@
-import { Check, ChevronRight } from 'lucide-react-native';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { CalendarClock, Check, ChevronRight } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
 import { CategoryIcon } from '@/features/categories/CategoryIcon';
@@ -14,23 +16,55 @@ interface Props {
   onTogglePaid: (paid: boolean) => void;
 }
 
+/** Devuelve true si el gasto arranca en un mes futuro. */
+function isFutureStart(startDate: string): boolean {
+  const startMonth = startDate.slice(0, 7);
+  const currentMonth = format(new Date(), 'yyyy-MM');
+  return startMonth > currentMonth;
+}
+
+function formatStartMonth(iso: string): string {
+  try {
+    const label = format(parseISO(iso), 'MMM yyyy', { locale: es });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  } catch {
+    return iso;
+  }
+}
+
 export function FixedExpenseCard({ expense, category, onPress, onTogglePaid }: Props) {
   const paid = expense.payment_id !== null;
+  const isFuture = isFutureStart(expense.start_date);
   return (
-    <View className="flex-row items-center rounded-2xl border border-gray-200 bg-white p-4">
+    <View
+      className={
+        isFuture
+          ? 'flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 p-4'
+          : 'flex-row items-center rounded-2xl border border-gray-200 bg-white p-4'
+      }
+    >
       {/* Toggle pago */}
       <Pressable
-        onPress={() => onTogglePaid(!paid)}
+        onPress={() => !isFuture && onTogglePaid(!paid)}
+        disabled={isFuture}
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: paid }}
-        accessibilityLabel={paid ? 'Marcar como pendiente' : 'Marcar como pagado este mes'}
+        accessibilityState={{ checked: paid, disabled: isFuture }}
+        accessibilityLabel={
+          isFuture
+            ? 'Este gasto todavía no está vigente'
+            : paid
+              ? 'Marcar como pendiente'
+              : 'Marcar como pagado este mes'
+        }
         className={
-          paid
-            ? 'mr-3 h-9 w-9 items-center justify-center rounded-full bg-emerald-600'
-            : 'mr-3 h-9 w-9 items-center justify-center rounded-full border-2 border-gray-300'
+          isFuture
+            ? 'mr-3 h-9 w-9 items-center justify-center rounded-full border-2 border-dashed border-gray-300 opacity-50'
+            : paid
+              ? 'mr-3 h-9 w-9 items-center justify-center rounded-full bg-emerald-600'
+              : 'mr-3 h-9 w-9 items-center justify-center rounded-full border-2 border-gray-300'
         }
       >
-        {paid && <Check size={18} color="#fff" strokeWidth={3} />}
+        {!isFuture && paid && <Check size={18} color="#fff" strokeWidth={3} />}
       </Pressable>
 
       {/* Contenido */}
@@ -71,8 +105,16 @@ export function FixedExpenseCard({ expense, category, onPress, onTogglePaid }: P
           </View>
           <Text className="mt-0.5 text-sm text-gray-500">
             Vence el día {expense.due_day}
-            {paid ? ' · Pagado este mes' : ''}
+            {paid && !isFuture ? ' · Pagado este mes' : ''}
           </Text>
+          {isFuture && (
+            <View className="mt-1 flex-row items-center gap-1 self-start rounded-md bg-amber-100 px-2 py-0.5">
+              <CalendarClock size={12} color="#b45309" strokeWidth={2.5} />
+              <Text className="text-xs font-semibold text-amber-800">
+                Empieza en {formatStartMonth(expense.start_date)}
+              </Text>
+            </View>
+          )}
         </View>
         <ChevronRight size={18} color="#94a3b8" className="ml-1" />
       </Pressable>

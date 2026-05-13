@@ -32,18 +32,22 @@ export async function getBudgetForPeriod(
     currency,
   );
 
-  // GASTOS FIJOS: SUM de TODOS los fixed_expenses activos en la moneda,
-  // sin filtro de fechas de vigencia. Si el usuario crea un gasto que arranca
-  // en el futuro (ej. cuota de moto que empieza en agosto), lo queremos contar
-  // ya en el presupuesto del mes actual para que reserve el dinero por adelantado.
-  // Para "pausar" un gasto sin borrarlo se usaría el flag is_active=0
-  // (sin UI todavía — se agenda en una fase futura).
+  // GASTOS FIJOS: solo los que están vigentes en este período.
+  // Vigente = start_date <= período Y (end_date IS NULL OR end_date >= período).
+  // Comparamos por substring 'YYYY-MM' que ordena lexicográficamente.
+  // Un gasto agendado para el futuro (start_date posterior al período actual)
+  // aparece en la lista de Fijos con un badge "Empieza en …" pero NO cuenta
+  // todavía en el presupuesto del mes.
   const fixedRow = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(amount_cents), 0) AS total
        FROM fixed_expenses
       WHERE is_active = 1
-        AND currency = ?`,
+        AND currency = ?
+        AND substr(start_date, 1, 7) <= ?
+        AND (end_date IS NULL OR substr(end_date, 1, 7) >= ?)`,
     currency,
+    period,
+    period,
   );
 
   // GASTOS VARIABLES: SUM del período en la moneda. (Fase 5 — por ahora siempre 0.)
