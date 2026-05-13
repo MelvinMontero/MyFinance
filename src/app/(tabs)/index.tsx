@@ -7,6 +7,7 @@ import {
   getIncomeCount,
   getOccurrenceCount,
 } from '@/features/incomes/repository';
+import { useSettings } from '@/features/settings/store';
 import { getCategoryCount, getSettings, initDb } from '@/shared/db';
 import type { Settings } from '@/shared/db/types';
 
@@ -19,14 +20,21 @@ export default function HomeScreen() {
   const [occCount, setOccCount] = useState<number>(0);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Estos vienen del store reactivo — se actualizan cuando cambiás en Ajustes.
+  const liveSavingsPercent = useSettings((s) => s.savings_percent);
+  const liveCurrency = useSettings((s) => s.currency);
 
-  // Init de DB una sola vez
+  // Init de DB + settings store una sola vez
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         await initDb();
-        const [count, settingsRow] = await Promise.all([getCategoryCount(), getSettings()]);
+        const [count, settingsRow] = await Promise.all([
+          getCategoryCount(),
+          getSettings(),
+          useSettings.getState().load(),
+        ]);
         if (cancelled) return;
         setCategoryCount(count);
         setSettings(settingsRow);
@@ -103,11 +111,11 @@ export default function HomeScreen() {
 
         {settings && (
           <View className="mt-4 rounded-2xl bg-gray-50 p-5">
-            <Text className="text-sm uppercase tracking-wide text-gray-600">Configuración inicial</Text>
+            <Text className="text-sm uppercase tracking-wide text-gray-600">Configuración</Text>
             <Text className="mt-1 text-base text-gray-900">
-              Ahorro objetivo: {settings.savings_percent}%
+              Ahorro objetivo: {liveSavingsPercent}%
             </Text>
-            <Text className="text-base text-gray-900">Moneda: {settings.currency}</Text>
+            <Text className="text-base text-gray-900">Moneda: {liveCurrency}</Text>
             <Text className="text-base text-gray-900">Tema: {settings.theme}</Text>
           </View>
         )}

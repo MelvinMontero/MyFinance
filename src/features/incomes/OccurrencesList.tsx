@@ -3,7 +3,7 @@ import { es } from 'date-fns/locale';
 import { Check } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
-import { formatCents } from '@/shared/utils/money';
+import { useFormatCents } from '@/shared/hooks/useFormatCents';
 
 import type { IncomeOccurrence } from '@/shared/db/types';
 
@@ -14,6 +14,7 @@ interface Props {
 }
 
 export function OccurrencesList({ occurrences, onToggleConfirm, onPressAmount }: Props) {
+  const formatCents = useFormatCents();
   if (occurrences.length === 0) {
     return (
       <View className="items-center rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-8">

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 
-import { formatCents, fromCents, parseAmount, toCents } from '@/shared/utils/money';
+import { useCurrency, useFormatCents } from '@/shared/hooks/useFormatCents';
+import { currencySymbol } from '@/shared/utils/currency';
+import { fromCents, parseAmount, toCents } from '@/shared/utils/money';
 
 interface Props {
   visible: boolean;
@@ -24,6 +26,8 @@ export function OverrideAmountModal({
   onCancel,
   onSave,
 }: Props) {
+  const formatCents = useFormatCents();
+  const currency = useCurrency();
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -71,10 +75,10 @@ export function OverrideAmountModal({
           </Text>
 
           <Text className="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
-            Monto en CRC
+            Monto en {currency}
           </Text>
           <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-            <Text className="mr-2 text-xl font-semibold text-gray-400">₡</Text>
+            <Text className="mr-2 text-xl font-semibold text-gray-400">{currencySymbol(currency)}</Text>
             <TextInput
               className="flex-1 text-xl font-semibold text-gray-900"
               keyboardType="decimal-pad"

@@ -7,6 +7,8 @@ import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
+import { useCurrency } from '@/shared/hooks/useFormatCents';
+import { currencySymbol } from '@/shared/utils/currency';
 import { fromCents, parseAmount, toCents } from '@/shared/utils/money';
 
 import { incomeFormSchema, type IncomeFormValues } from './schemas';
@@ -27,6 +29,7 @@ const FREQUENCY_OPTIONS: { value: Frequency; label: string; hint: string }[] = [
 ];
 
 export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
+  const currency = useCurrency();
   const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const {
     control,
@@ -76,14 +79,14 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
       {/* MONTO */}
       <View>
         <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-          Monto
+          Monto en {currency}
         </Text>
         <Controller
           control={control}
           name="amount"
           render={({ field: { value, onChange, onBlur } }) => (
             <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
-              <Text className="mr-2 text-2xl font-semibold text-gray-400">₡</Text>
+              <Text className="mr-2 text-2xl font-semibold text-gray-400">{currencySymbol(currency)}</Text>
               <TextInput
                 className="flex-1 text-2xl font-semibold text-gray-900"
                 keyboardType="decimal-pad"

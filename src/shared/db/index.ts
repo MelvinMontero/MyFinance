@@ -43,5 +43,39 @@ export async function getSettings(): Promise<Settings | null> {
   return result ?? null;
 }
 
+export interface UpdateSettingsInput {
+  savings_percent?: number;
+  currency?: string;
+  theme?: Settings['theme'];
+}
+
+/**
+ * Actualiza la fila única de settings (id=1). Patch parcial.
+ */
+export async function updateSettings(patch: UpdateSettingsInput): Promise<void> {
+  const db = await getDb();
+  const sets: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (patch.savings_percent !== undefined) {
+    sets.push('savings_percent = ?');
+    args.push(patch.savings_percent);
+  }
+  if (patch.currency !== undefined) {
+    sets.push('currency = ?');
+    args.push(patch.currency);
+  }
+  if (patch.theme !== undefined) {
+    sets.push('theme = ?');
+    args.push(patch.theme);
+  }
+  if (sets.length === 0) return;
+
+  sets.push('updated_at = ?');
+  args.push(new Date().toISOString());
+
+  await db.runAsync(`UPDATE settings SET ${sets.join(', ')} WHERE id = 1`, ...args);
+}
+
 export { getDb, closeDb } from './client';
 export type * from './types';
