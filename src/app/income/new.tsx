@@ -49,12 +49,12 @@ export default function NewIncomeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        className="flex-1 bg-white"
+        className="flex-1 bg-white dark:bg-gray-900"
         contentContainerStyle={{ padding: 24, paddingBottom: 80 }}
         keyboardShouldPersistTaps="handled"
       >
         <View className="mb-2">
-          <Text className="text-sm text-gray-500">
+          <Text className="text-sm text-gray-500 dark:text-gray-400">
             Cuando guardés, se proyectarán automáticamente las ocurrencias para los próximos 12 meses.
           </Text>
         </View>

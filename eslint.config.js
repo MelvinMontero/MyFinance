@@ -20,9 +20,4 @@ module.exports = [
       'eslint.config.js',
     ],
   },
-  {
-    rules: {
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    },
-  },
 ];

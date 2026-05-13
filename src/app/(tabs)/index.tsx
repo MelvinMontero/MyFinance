@@ -81,18 +81,18 @@ export default function HomeScreen() {
 
   if (status === 'loading') {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
         <ActivityIndicator size="large" color="#059669" />
-        <Text className="mt-4 text-base text-gray-700">Calculando tus sobres…</Text>
+        <Text className="mt-4 text-base text-gray-700 dark:text-gray-300">Calculando tus sobres…</Text>
       </SafeAreaView>
     );
   }
 
   if (status === 'error') {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg font-semibold text-red-600">Error al cargar</Text>
-        <Text className="mt-2 text-center text-sm text-gray-600">{errorMsg}</Text>
+      <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-gray-900 px-6">
+        <Text className="text-lg font-semibold text-red-600 dark:text-red-400">Error al cargar</Text>
+        <Text className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">{errorMsg}</Text>
       </SafeAreaView>
     );
   }
@@ -102,14 +102,14 @@ export default function HomeScreen() {
   const hasIncome = budget.income > 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }}>
         {/* HEADER */}
         <View className="pt-4">
-          <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             {periodLabel}
           </Text>
-          <Text className="mt-1 text-3xl font-bold text-gray-900">MyFinance</Text>
+          <Text className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">MyFinance</Text>
         </View>
 
         {/* TOGGLE + SOBRES — se aísla en su propio componente para que el
@@ -128,11 +128,11 @@ export default function HomeScreen() {
 
         {/* WARNING over-budget */}
         {budget.isOverBudget && (
-          <View className="mt-4 flex-row items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <View className="mt-4 flex-row items-start gap-3 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-4">
             <AlertTriangle size={20} color="#dc2626" strokeWidth={2} />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-red-900">Sobre presupuesto</Text>
-              <Text className="mt-1 text-sm text-red-800">
+              <Text className="text-sm font-bold text-red-900 dark:text-red-100">Sobre presupuesto</Text>
+              <Text className="mt-1 text-sm text-red-800 dark:text-red-200">
                 Tu ahorro objetivo + gastos fijos superan tu ingreso del mes en{' '}
                 {formatCents(Math.abs(budget.freeMoney), { currency: liveCurrency })}. Revisá
                 el % de ahorro o tus gastos fijos.
@@ -143,11 +143,11 @@ export default function HomeScreen() {
 
         {/* WARNING overspent */}
         {budget.isOverspent && !budget.isOverBudget && (
-          <View className="mt-4 flex-row items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <View className="mt-4 flex-row items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-4">
             <AlertTriangle size={20} color="#d97706" strokeWidth={2} />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-amber-900">Te pasaste del dinero libre</Text>
-              <Text className="mt-1 text-sm text-amber-800">
+              <Text className="text-sm font-bold text-amber-900 dark:text-amber-100">Te pasaste del dinero libre</Text>
+              <Text className="mt-1 text-sm text-amber-800 dark:text-amber-200">
                 Excedés en {formatCents(Math.abs(budget.freeMoneyRemaining), { currency: liveCurrency })}.
                 Considerá frenar gastos extras hasta el próximo mes.
               </Text>
@@ -157,11 +157,11 @@ export default function HomeScreen() {
 
         {/* OTRAS MONEDAS */}
         {budget.otherCurrenciesPresent.length > 0 && (
-          <View className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
-            <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <View className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               No incluidos en este cálculo
             </Text>
-            <Text className="mt-1 text-sm text-gray-700">
+            <Text className="mt-1 text-sm text-gray-700 dark:text-gray-300">
               Tenés registros también en {budget.otherCurrenciesPresent.join(', ')}. Cambiá la
               moneda por defecto en Ajustes para ver sus sobres.
             </Text>
@@ -169,11 +169,11 @@ export default function HomeScreen() {
         )}
 
         {/* FOOTER */}
-        <View className="mt-6 rounded-2xl bg-white p-4">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <View className="mt-6 rounded-2xl bg-white dark:bg-gray-900 p-4">
+          <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Configuración actual
           </Text>
-          <Text className="mt-1 text-sm text-gray-700">
+          <Text className="mt-1 text-sm text-gray-700 dark:text-gray-300">
             Moneda: {liveCurrency} · Ahorro objetivo: {liveSavingsPercent}%
           </Text>
         </View>
@@ -233,22 +233,22 @@ function BucketsBlock({
   return (
     <>
       {/* TOGGLE Mensual / Quincenal */}
-      <View className="mt-4 flex-row self-start rounded-2xl bg-gray-200 p-1">
+      <View className="mt-4 flex-row self-start rounded-2xl bg-gray-200 dark:bg-gray-700 p-1">
         <Pressable
           onPress={() => setViewMode('monthly')}
           accessibilityRole="button"
           accessibilityState={{ selected: viewMode === 'monthly' }}
           className={
             viewMode === 'monthly'
-              ? 'rounded-xl bg-white px-5 py-2'
+              ? 'rounded-xl bg-white dark:bg-gray-900 px-5 py-2'
               : 'rounded-xl px-5 py-2'
           }
         >
           <Text
             className={
               viewMode === 'monthly'
-                ? 'text-sm font-bold text-gray-900'
-                : 'text-sm font-medium text-gray-600'
+                ? 'text-sm font-bold text-gray-900 dark:text-gray-100'
+                : 'text-sm font-medium text-gray-600 dark:text-gray-400'
             }
           >
             Mensual
@@ -260,15 +260,15 @@ function BucketsBlock({
           accessibilityState={{ selected: viewMode === 'biweekly' }}
           className={
             viewMode === 'biweekly'
-              ? 'rounded-xl bg-white px-5 py-2'
+              ? 'rounded-xl bg-white dark:bg-gray-900 px-5 py-2'
               : 'rounded-xl px-5 py-2'
           }
         >
           <Text
             className={
               viewMode === 'biweekly'
-                ? 'text-sm font-bold text-gray-900'
-                : 'text-sm font-medium text-gray-600'
+                ? 'text-sm font-bold text-gray-900 dark:text-gray-100'
+                : 'text-sm font-medium text-gray-600 dark:text-gray-400'
             }
           >
             Quincenal
@@ -278,26 +278,26 @@ function BucketsBlock({
 
       {/* HERO */}
       {budget.isOverBudget ? (
-        <View className="mt-6 rounded-3xl bg-red-50 p-6">
-          <Text className="text-sm font-semibold uppercase tracking-wide text-red-700">
+        <View className="mt-6 rounded-3xl bg-red-50 dark:bg-red-950 p-6">
+          <Text className="text-sm font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
             Sobre presupuesto
           </Text>
-          <Text className="mt-2 text-5xl font-bold text-red-700">
+          <Text className="mt-2 text-5xl font-bold text-red-700 dark:text-red-300">
             −{formatCents(halve(Math.abs(budget.freeMoney)), { currency })}
           </Text>
-          <Text className="mt-1 text-sm text-red-800">
+          <Text className="mt-1 text-sm text-red-800 dark:text-red-200">
             Te faltan {formatCents(halve(Math.abs(budget.freeMoney)), { currency })} para cubrir ahorro + fijos.
           </Text>
         </View>
       ) : (
-        <View className="mt-6 rounded-3xl bg-emerald-50 p-6">
-          <Text className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+        <View className="mt-6 rounded-3xl bg-emerald-50 dark:bg-emerald-950 p-6">
+          <Text className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
             Te quedan
           </Text>
-          <Text className="mt-2 text-5xl font-bold text-emerald-900">
+          <Text className="mt-2 text-5xl font-bold text-emerald-900 dark:text-emerald-100">
             {formatCents(halve(budget.freeMoneyRemaining), { currency })}
           </Text>
-          <Text className="mt-1 text-base text-emerald-800">
+          <Text className="mt-1 text-base text-emerald-800 dark:text-emerald-200">
             de {formatCents(halve(budget.freeMoney), { currency })} de dinero libre {periodSuffix}
           </Text>
         </View>
@@ -362,12 +362,12 @@ function BucketsBlock({
 
 function EmptyState({ onAddIncome }: { onAddIncome: () => void }) {
   return (
-    <View className="mt-6 items-center rounded-3xl border border-dashed border-gray-300 bg-white p-8">
-      <View className="h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100">
+    <View className="mt-6 items-center rounded-3xl border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-8">
+      <View className="h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900">
         <Wallet size={32} color="#059669" strokeWidth={2} />
       </View>
-      <Text className="mt-4 text-lg font-bold text-gray-900">Aún no hay ingresos este mes</Text>
-      <Text className="mt-1 text-center text-sm text-gray-500">
+      <Text className="mt-4 text-lg font-bold text-gray-900 dark:text-gray-100">Aún no hay ingresos este mes</Text>
+      <Text className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
         Agregá tu primer ingreso para ver cómo se reparten tus sobres.
       </Text>
       <Pressable

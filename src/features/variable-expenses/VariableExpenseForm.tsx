@@ -86,7 +86,7 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
     <View className="gap-6">
       {/* MONEDA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Moneda
         </Text>
         <Controller
@@ -104,15 +104,15 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
                     accessibilityState={{ selected }}
                     className={
                       selected
-                        ? 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-amber-600 bg-amber-50 px-4 py-3'
-                        : 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3'
+                        ? 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-amber-600 bg-amber-50 dark:bg-amber-950 px-4 py-3'
+                        : 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3'
                     }
                   >
                     <Text
                       className={
                         selected
-                          ? 'text-xl font-bold text-amber-800'
-                          : 'text-xl font-bold text-gray-500'
+                          ? 'text-xl font-bold text-amber-800 dark:text-amber-200'
+                          : 'text-xl font-bold text-gray-500 dark:text-gray-400'
                       }
                     >
                       {currencySymbol(opt)}
@@ -120,8 +120,8 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
                     <Text
                       className={
                         selected
-                          ? 'text-sm font-semibold text-amber-800'
-                          : 'text-sm font-semibold text-gray-700'
+                          ? 'text-sm font-semibold text-amber-800 dark:text-amber-200'
+                          : 'text-sm font-semibold text-gray-700 dark:text-gray-300'
                       }
                     >
                       {opt}
@@ -136,19 +136,19 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
 
       {/* MONTO */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Monto en {currency}
         </Text>
         <Controller
           control={control}
           name="amount"
           render={({ field: { value, onChange, onBlur } }) => (
-            <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
-              <Text className="mr-2 text-2xl font-semibold text-gray-400">
+            <View className="flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4">
+              <Text className="mr-2 text-2xl font-semibold text-gray-400 dark:text-gray-500">
                 {currencySymbol(currency)}
               </Text>
               <TextInput
-                className="flex-1 text-2xl font-semibold text-gray-900"
+                className="flex-1 text-2xl font-semibold text-gray-900 dark:text-gray-100"
                 keyboardType="decimal-pad"
                 placeholder="0"
                 placeholderTextColor="#cbd5e1"
@@ -171,13 +171,13 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
           )}
         />
         {errors.amount && (
-          <Text className="mt-1 text-sm text-red-600">{errors.amount.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</Text>
         )}
       </View>
 
       {/* CATEGORÍA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Categoría
         </Text>
         <Controller
@@ -200,8 +200,8 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
                       accessibilityState={{ selected }}
                       className={
                         selected
-                          ? 'flex-row items-center gap-3 rounded-2xl border-2 border-amber-600 bg-amber-50 px-4 py-3'
-                          : 'flex-row items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3'
+                          ? 'flex-row items-center gap-3 rounded-2xl border-2 border-amber-600 bg-amber-50 dark:bg-amber-950 px-4 py-3'
+                          : 'flex-row items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3'
                       }
                     >
                       <View
@@ -213,8 +213,8 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
                       <Text
                         className={
                           selected
-                            ? 'flex-1 text-base font-semibold text-amber-800'
-                            : 'flex-1 text-base font-semibold text-gray-900'
+                            ? 'flex-1 text-base font-semibold text-amber-800 dark:text-amber-200'
+                            : 'flex-1 text-base font-semibold text-gray-900 dark:text-gray-100'
                         }
                       >
                         {cat.name}
@@ -232,40 +232,40 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
           )}
         />
         {errors.category_id && (
-          <Text className="mt-1 text-sm text-red-600">{errors.category_id.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.category_id.message}</Text>
         )}
       </View>
 
       {/* FECHA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Fecha
         </Text>
         <Pressable
           onPress={openDatePicker}
-          className="flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
+          className="flex-row items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4"
         >
-          <Text className="text-base text-gray-900">
+          <Text className="text-base text-gray-900 dark:text-gray-100">
             {dateStr ? formatDateEs(dateStr) : 'Seleccionar fecha'}
           </Text>
           <Calendar size={20} color="#64748b" />
         </Pressable>
         {errors.occurred_at && (
-          <Text className="mt-1 text-sm text-red-600">{errors.occurred_at.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.occurred_at.message}</Text>
         )}
       </View>
 
       {/* NOTA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-          Nota <Text className="text-gray-400 normal-case">(opcional)</Text>
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+          Nota <Text className="text-gray-400 dark:text-gray-500 normal-case">(opcional)</Text>
         </Text>
         <Controller
           control={control}
           name="note"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextInput
-              className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-base text-gray-900"
+              className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4 text-base text-gray-900 dark:text-gray-100"
               placeholder="Starbucks, almuerzo en…"
               placeholderTextColor="#cbd5e1"
               value={value ?? ''}
@@ -276,7 +276,7 @@ export function VariableExpenseForm({ defaultValues, onSubmit, submitLabel }: Pr
           )}
         />
         {errors.note && (
-          <Text className="mt-1 text-sm text-red-600">{errors.note.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.note.message}</Text>
         )}
       </View>
 

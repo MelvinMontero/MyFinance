@@ -104,7 +104,7 @@ export default function EditFixedExpenseScreen() {
 
   if (loading || !expense) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
         <ActivityIndicator size="large" color="#059669" />
       </View>
     );
@@ -116,7 +116,7 @@ export default function EditFixedExpenseScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        className="flex-1 bg-white"
+        className="flex-1 bg-white dark:bg-gray-900"
         contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -137,28 +137,28 @@ export default function EditFixedExpenseScreen() {
         {/* Historial de pagos */}
         {payments.length > 0 && (
           <View className="mt-8">
-            <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
               Historial de pagos
             </Text>
-            <View className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+            <View className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
               {payments.map((p, idx) => (
                 <View
                   key={p.id}
                   className={
                     idx > 0
-                      ? 'flex-row items-center justify-between border-t border-gray-100 px-4 py-3'
+                      ? 'flex-row items-center justify-between border-t border-gray-100 dark:border-gray-800 px-4 py-3'
                       : 'flex-row items-center justify-between px-4 py-3'
                   }
                 >
                   <View>
-                    <Text className="text-base text-gray-900">
+                    <Text className="text-base text-gray-900 dark:text-gray-100">
                       {formatPeriodLabelLong(p.period)}
                     </Text>
-                    <Text className="text-xs text-gray-500">
+                    <Text className="text-xs text-gray-500 dark:text-gray-400">
                       Pagado el {formatDateShort(p.paid_at)}
                     </Text>
                   </View>
-                  <Text className="text-base font-semibold text-gray-900">
+                  <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">
                     {formatCents(p.amount_cents, { currency: expense.currency })}
                   </Text>
                 </View>
@@ -172,10 +172,10 @@ export default function EditFixedExpenseScreen() {
           <Pressable
             onPress={confirmDelete}
             accessibilityRole="button"
-            className="flex-row items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 active:bg-red-100"
+            className="flex-row items-center justify-center gap-2 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 active:bg-red-100"
           >
             <Trash2 size={18} color="#dc2626" />
-            <Text className="text-base font-semibold text-red-700">Eliminar gasto fijo</Text>
+            <Text className="text-base font-semibold text-red-700 dark:text-red-300">Eliminar gasto fijo</Text>
           </Pressable>
         </View>
       </ScrollView>

@@ -37,7 +37,7 @@ type ReportMode = 'monthly' | 'yearly';
 
 export default function ReportsScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <ReportsContent />
     </SafeAreaView>
   );
@@ -118,29 +118,29 @@ function ReportsContent() {
     <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
       {/* HEADER */}
       <View className="pt-4">
-        <Text className="text-3xl font-bold text-gray-900">Reportes</Text>
-        <Text className="mt-1 text-base text-gray-500">
+        <Text className="text-3xl font-bold text-gray-900 dark:text-gray-100">Reportes</Text>
+        <Text className="mt-1 text-base text-gray-500 dark:text-gray-400">
           Cómo se mueve tu plata en {currency}
         </Text>
       </View>
 
       {/* TOGGLE */}
-      <View className="mt-4 flex-row self-start rounded-2xl bg-gray-200 p-1">
+      <View className="mt-4 flex-row self-start rounded-2xl bg-gray-200 dark:bg-gray-700 p-1">
         <Pressable
           onPress={() => setMode('monthly')}
           accessibilityRole="button"
           accessibilityState={{ selected: mode === 'monthly' }}
           className={
             mode === 'monthly'
-              ? 'rounded-xl bg-white px-5 py-2'
+              ? 'rounded-xl bg-white dark:bg-gray-900 px-5 py-2'
               : 'rounded-xl px-5 py-2'
           }
         >
           <Text
             className={
               mode === 'monthly'
-                ? 'text-sm font-bold text-gray-900'
-                : 'text-sm font-medium text-gray-600'
+                ? 'text-sm font-bold text-gray-900 dark:text-gray-100'
+                : 'text-sm font-medium text-gray-600 dark:text-gray-400'
             }
           >
             Mensual
@@ -152,15 +152,15 @@ function ReportsContent() {
           accessibilityState={{ selected: mode === 'yearly' }}
           className={
             mode === 'yearly'
-              ? 'rounded-xl bg-white px-5 py-2'
+              ? 'rounded-xl bg-white dark:bg-gray-900 px-5 py-2'
               : 'rounded-xl px-5 py-2'
           }
         >
           <Text
             className={
               mode === 'yearly'
-                ? 'text-sm font-bold text-gray-900'
-                : 'text-sm font-medium text-gray-600'
+                ? 'text-sm font-bold text-gray-900 dark:text-gray-100'
+                : 'text-sm font-medium text-gray-600 dark:text-gray-400'
             }
           >
             Anual
@@ -169,7 +169,7 @@ function ReportsContent() {
       </View>
 
       {/* PERIOD NAV */}
-      <View className="mt-4 flex-row items-center justify-between rounded-2xl bg-white px-4 py-3">
+      <View className="mt-4 flex-row items-center justify-between rounded-2xl bg-white dark:bg-gray-900 px-4 py-3">
         <Pressable
           onPress={prev}
           accessibilityLabel="Período anterior"
@@ -178,7 +178,7 @@ function ReportsContent() {
         >
           <ChevronLeft size={22} color="#475569" />
         </Pressable>
-        <Text className="text-lg font-bold text-gray-900">{periodLabel}</Text>
+        <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">{periodLabel}</Text>
         <Pressable
           onPress={next}
           accessibilityLabel="Período siguiente"
@@ -216,12 +216,12 @@ function MonthlyView({
 
   if (breakdown.length === 0) {
     return (
-      <View className="mt-6 items-center rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-12">
+      <View className="mt-6 items-center rounded-3xl border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-6 py-12">
         <PieIcon size={48} color="#cbd5e1" strokeWidth={1.5} />
-        <Text className="mt-4 text-lg font-semibold text-gray-700">
+        <Text className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
           Sin gastos extras
         </Text>
-        <Text className="mt-1 text-center text-sm text-gray-500">
+        <Text className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
           No hay gastos variables registrados en este mes. Agregalos desde la tab
           Extras o el botón rápido del Inicio.
         </Text>
@@ -241,8 +241,8 @@ function MonthlyView({
   return (
     <>
       {/* DONUT */}
-      <View className="mt-6 items-center rounded-2xl bg-white p-5">
-        <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <View className="mt-6 items-center rounded-2xl bg-white dark:bg-gray-900 p-5">
+        <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Distribución por categoría
         </Text>
         <View className="my-4">
@@ -253,10 +253,10 @@ function MonthlyView({
             innerRadius={70}
             centerLabelComponent={() => (
               <View className="items-center">
-                <Text className="text-xs uppercase tracking-wide text-gray-500">
+                <Text className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Total
                 </Text>
-                <Text className="text-lg font-bold text-gray-900">
+                <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   {formatCents(total, { currency })}
                 </Text>
               </View>
@@ -266,8 +266,8 @@ function MonthlyView({
       </View>
 
       {/* TOP CATEGORIES */}
-      <View className="mt-4 rounded-2xl bg-white p-5">
-        <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <View className="mt-4 rounded-2xl bg-white dark:bg-gray-900 p-5">
+        <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Top {Math.min(5, breakdown.length)} categorías
         </Text>
         <View className="mt-3 gap-3">
@@ -283,20 +283,20 @@ function MonthlyView({
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-baseline justify-between">
-                    <Text className="text-base font-semibold text-gray-900">
+                    <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">
                       {cat.name}
                     </Text>
-                    <Text className="text-base font-bold text-gray-900">
+                    <Text className="text-base font-bold text-gray-900 dark:text-gray-100">
                       {formatCents(cat.amount_cents, { currency })}
                     </Text>
                   </View>
-                  <View className="mt-1.5 h-2 overflow-hidden rounded-full bg-gray-100">
+                  <View className="mt-1.5 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     <View
                       className="h-full rounded-full"
                       style={{ width: `${pct}%`, backgroundColor: cat.color }}
                     />
                   </View>
-                  <Text className="mt-1 text-xs text-gray-500">
+                  <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {pct.toFixed(0)}% · {cat.count}{' '}
                     {cat.count === 1 ? 'gasto' : 'gastos'}
                   </Text>
@@ -327,12 +327,12 @@ function YearlyView({
 
   if (!hasData || !kpis) {
     return (
-      <View className="mt-6 items-center rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-12">
+      <View className="mt-6 items-center rounded-3xl border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-6 py-12">
         <BarChart3 size={48} color="#cbd5e1" strokeWidth={1.5} />
-        <Text className="mt-4 text-lg font-semibold text-gray-700">
+        <Text className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
           Sin datos para este año
         </Text>
-        <Text className="mt-1 text-center text-sm text-gray-500">
+        <Text className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
           Cargá ingresos y gastos para ver el resumen anual.
         </Text>
       </View>
@@ -353,11 +353,11 @@ function YearlyView({
   return (
     <>
       {/* STACKED BARS */}
-      <View className="mt-6 rounded-2xl bg-white p-5">
-        <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <View className="mt-6 rounded-2xl bg-white dark:bg-gray-900 p-5">
+        <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Distribución mensual del año
         </Text>
-        <Text className="mt-1 text-xs text-gray-500">Ahorro · Fijos · Variables</Text>
+        <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ahorro · Fijos · Variables</Text>
         <View className="mt-4 -mx-2">
           <BarChart
             stackData={stackData}
@@ -430,7 +430,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <View className="flex-row items-center gap-1.5">
       <View className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
-      <Text className="text-xs font-medium text-gray-700">{label}</Text>
+      <Text className="text-xs font-medium text-gray-700 dark:text-gray-300">{label}</Text>
     </View>
   );
 }
@@ -438,9 +438,9 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 type KpiTint = 'emerald' | 'blue' | 'amber';
 
 const TINTS: Record<KpiTint, { bg: string; iconColor: string; text: string }> = {
-  emerald: { bg: 'bg-emerald-100', iconColor: '#059669', text: 'text-emerald-900' },
-  blue: { bg: 'bg-blue-100', iconColor: '#2563eb', text: 'text-blue-900' },
-  amber: { bg: 'bg-amber-100', iconColor: '#d97706', text: 'text-amber-900' },
+  emerald: { bg: 'bg-emerald-100 dark:bg-emerald-900', iconColor: '#059669', text: 'text-emerald-900 dark:text-emerald-100' },
+  blue: { bg: 'bg-blue-100 dark:bg-blue-900', iconColor: '#2563eb', text: 'text-blue-900 dark:text-blue-100' },
+  amber: { bg: 'bg-amber-100 dark:bg-amber-900', iconColor: '#d97706', text: 'text-amber-900 dark:text-amber-100' },
 };
 
 interface IconComponentProps {
@@ -464,16 +464,16 @@ function KpiCard({
 }) {
   const t = TINTS[tint];
   return (
-    <View className="flex-row items-center rounded-2xl bg-white p-4">
+    <View className="flex-row items-center rounded-2xl bg-white dark:bg-gray-900 p-4">
       <View className={`mr-3 h-12 w-12 items-center justify-center rounded-2xl ${t.bg}`}>
         <Icon size={22} color={t.iconColor} strokeWidth={2} />
       </View>
       <View className="flex-1">
-        <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {label}
         </Text>
         <Text className={`text-lg font-bold ${t.text}`}>{value}</Text>
-        {subtitle && <Text className="text-xs text-gray-500">{subtitle}</Text>}
+        {subtitle && <Text className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</Text>}
       </View>
     </View>
   );

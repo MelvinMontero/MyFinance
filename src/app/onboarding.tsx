@@ -63,7 +63,7 @@ export default function OnboardingScreen() {
   const isLast = index === SLIDES.length - 1;
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top', 'bottom']}>
       <View className="flex-1 items-center justify-center px-8">
         <View
           className="h-28 w-28 items-center justify-center rounded-3xl"
@@ -71,10 +71,10 @@ export default function OnboardingScreen() {
         >
           <slide.Icon size={56} color={slide.iconTint} strokeWidth={1.8} />
         </View>
-        <Text className="mt-8 text-center text-3xl font-bold text-gray-900">
+        <Text className="mt-8 text-center text-3xl font-bold text-gray-900 dark:text-gray-100">
           {slide.title}
         </Text>
-        <Text className="mt-4 text-center text-base leading-6 text-gray-600">
+        <Text className="mt-4 text-center text-base leading-6 text-gray-600 dark:text-gray-400">
           {slide.body}
         </Text>
       </View>
@@ -109,7 +109,7 @@ export default function OnboardingScreen() {
             accessibilityRole="button"
             className="mt-2 items-center py-3 active:opacity-60"
           >
-            <Text className="text-sm font-semibold text-gray-500">Saltar</Text>
+            <Text className="text-sm font-semibold text-gray-500 dark:text-gray-400">Saltar</Text>
           </Pressable>
         )}
       </View>

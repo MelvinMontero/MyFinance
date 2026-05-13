@@ -65,24 +65,24 @@ export default function FixedExpensesScreen() {
   const allPaid = totalCount > 0 && paidCount === totalCount;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <View className="px-6 pb-4 pt-4">
-        <Text className="text-3xl font-bold text-gray-900">Gastos fijos</Text>
-        <Text className="mt-1 text-base text-gray-500">{periodLabel}</Text>
+        <Text className="text-3xl font-bold text-gray-900 dark:text-gray-100">Gastos fijos</Text>
+        <Text className="mt-1 text-base text-gray-500 dark:text-gray-400">{periodLabel}</Text>
 
         {totalCount > 0 && (
           <View
             className={
               allPaid
-                ? 'mt-4 rounded-2xl bg-emerald-100 p-4'
-                : 'mt-4 rounded-2xl bg-amber-50 p-4'
+                ? 'mt-4 rounded-2xl bg-emerald-100 dark:bg-emerald-900 p-4'
+                : 'mt-4 rounded-2xl bg-amber-50 dark:bg-amber-950 p-4'
             }
           >
             <Text
               className={
                 allPaid
-                  ? 'text-sm font-semibold uppercase tracking-wide text-emerald-700'
-                  : 'text-sm font-semibold uppercase tracking-wide text-amber-700'
+                  ? 'text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300'
+                  : 'text-sm font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300'
               }
             >
               {allPaid ? '¡Mes al día!' : 'Progreso del mes'}
@@ -90,8 +90,8 @@ export default function FixedExpensesScreen() {
             <Text
               className={
                 allPaid
-                  ? 'mt-1 text-2xl font-bold text-emerald-900'
-                  : 'mt-1 text-2xl font-bold text-amber-900'
+                  ? 'mt-1 text-2xl font-bold text-emerald-900 dark:text-emerald-100'
+                  : 'mt-1 text-2xl font-bold text-amber-900 dark:text-amber-100'
               }
             >
               {paidCount} de {totalCount} pagados
@@ -114,12 +114,12 @@ export default function FixedExpensesScreen() {
         )}
         ListEmptyComponent={
           loading ? null : (
-            <View className="mt-8 items-center rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-12">
+            <View className="mt-8 items-center rounded-3xl border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-6 py-12">
               <Receipt size={48} color="#cbd5e1" strokeWidth={1.5} />
-              <Text className="mt-4 text-lg font-semibold text-gray-700">
+              <Text className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
                 Sin gastos fijos
               </Text>
-              <Text className="mt-1 text-center text-sm text-gray-500">
+              <Text className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
                 Agregá renta, internet, suscripciones — todo lo que se paga mes a mes.
               </Text>
               <Pressable

@@ -78,7 +78,7 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
     <View className="gap-6">
       {/* MONEDA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Moneda
         </Text>
         <Controller
@@ -97,15 +97,15 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
                     accessibilityLabel={`Moneda ${opt}`}
                     className={
                       selected
-                        ? 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50 px-4 py-3'
-                        : 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3'
+                        ? 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-4 py-3'
+                        : 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3'
                     }
                   >
                     <Text
                       className={
                         selected
-                          ? 'text-xl font-bold text-emerald-800'
-                          : 'text-xl font-bold text-gray-500'
+                          ? 'text-xl font-bold text-emerald-800 dark:text-emerald-200'
+                          : 'text-xl font-bold text-gray-500 dark:text-gray-400'
                       }
                     >
                       {currencySymbol(opt)}
@@ -113,8 +113,8 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
                     <Text
                       className={
                         selected
-                          ? 'text-sm font-semibold text-emerald-800'
-                          : 'text-sm font-semibold text-gray-700'
+                          ? 'text-sm font-semibold text-emerald-800 dark:text-emerald-200'
+                          : 'text-sm font-semibold text-gray-700 dark:text-gray-300'
                       }
                     >
                       {opt}
@@ -126,23 +126,23 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
           )}
         />
         {errors.currency && (
-          <Text className="mt-1 text-sm text-red-600">{errors.currency.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.currency.message}</Text>
         )}
       </View>
 
       {/* MONTO */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Monto en {currency}
         </Text>
         <Controller
           control={control}
           name="amount"
           render={({ field: { value, onChange, onBlur } }) => (
-            <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
-              <Text className="mr-2 text-2xl font-semibold text-gray-400">{currencySymbol(currency)}</Text>
+            <View className="flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4">
+              <Text className="mr-2 text-2xl font-semibold text-gray-400 dark:text-gray-500">{currencySymbol(currency)}</Text>
               <TextInput
-                className="flex-1 text-2xl font-semibold text-gray-900"
+                className="flex-1 text-2xl font-semibold text-gray-900 dark:text-gray-100"
                 keyboardType="decimal-pad"
                 placeholder="0"
                 placeholderTextColor="#cbd5e1"
@@ -164,21 +164,21 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
           )}
         />
         {errors.amount && (
-          <Text className="mt-1 text-sm text-red-600">{errors.amount.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</Text>
         )}
       </View>
 
       {/* SOURCE */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-          Fuente <Text className="text-gray-400 normal-case">(opcional)</Text>
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+          Fuente <Text className="text-gray-400 dark:text-gray-500 normal-case">(opcional)</Text>
         </Text>
         <Controller
           control={control}
           name="source"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextInput
-              className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-base text-gray-900"
+              className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4 text-base text-gray-900 dark:text-gray-100"
               placeholder="Sueldo, freelance, bono…"
               placeholderTextColor="#cbd5e1"
               value={value ?? ''}
@@ -189,13 +189,13 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
           )}
         />
         {errors.source && (
-          <Text className="mt-1 text-sm text-red-600">{errors.source.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.source.message}</Text>
         )}
       </View>
 
       {/* FRECUENCIA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Frecuencia
         </Text>
         <Controller
@@ -213,21 +213,21 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
                     accessibilityState={{ selected }}
                     className={
                       selected
-                        ? 'flex-row items-center justify-between rounded-2xl border-2 border-emerald-600 bg-emerald-50 px-5 py-4'
-                        : 'flex-row items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-4'
+                        ? 'flex-row items-center justify-between rounded-2xl border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-5 py-4'
+                        : 'flex-row items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-4'
                     }
                   >
                     <View>
                       <Text
                         className={
                           selected
-                            ? 'text-base font-semibold text-emerald-800'
-                            : 'text-base font-semibold text-gray-900'
+                            ? 'text-base font-semibold text-emerald-800 dark:text-emerald-200'
+                            : 'text-base font-semibold text-gray-900 dark:text-gray-100'
                         }
                       >
                         {opt.label}
                       </Text>
-                      <Text className="mt-0.5 text-sm text-gray-500">{opt.hint}</Text>
+                      <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{opt.hint}</Text>
                     </View>
                     {selected && (
                       <View className="h-5 w-5 items-center justify-center rounded-full bg-emerald-600">
@@ -241,40 +241,40 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
           )}
         />
         {errors.frequency && (
-          <Text className="mt-1 text-sm text-red-600">{errors.frequency.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.frequency.message}</Text>
         )}
       </View>
 
       {/* START DATE */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Fecha de inicio
         </Text>
         <Pressable
           onPress={() => openDatePicker('start_date')}
-          className="flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
+          className="flex-row items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4"
         >
-          <Text className="text-base text-gray-900">
+          <Text className="text-base text-gray-900 dark:text-gray-100">
             {startDateStr ? formatDateEs(startDateStr) : 'Seleccionar fecha'}
           </Text>
           <Calendar size={20} color="#64748b" />
         </Pressable>
         {errors.start_date && (
-          <Text className="mt-1 text-sm text-red-600">{errors.start_date.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.start_date.message}</Text>
         )}
       </View>
 
       {/* END DATE */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-          Fecha de fin <Text className="text-gray-400 normal-case">(opcional)</Text>
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+          Fecha de fin <Text className="text-gray-400 dark:text-gray-500 normal-case">(opcional)</Text>
         </Text>
         <View className="flex-row items-center gap-2">
           <Pressable
             onPress={() => openDatePicker('end_date')}
-            className="flex-1 flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
+            className="flex-1 flex-row items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4"
           >
-            <Text className={endDateStr ? 'text-base text-gray-900' : 'text-base text-gray-400'}>
+            <Text className={endDateStr ? 'text-base text-gray-900 dark:text-gray-100' : 'text-base text-gray-400 dark:text-gray-500'}>
               {endDateStr ? formatDateEs(endDateStr) : 'Sin fecha de fin'}
             </Text>
             <Calendar size={20} color="#64748b" />
@@ -283,28 +283,28 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
             <Pressable
               onPress={clearEndDate}
               accessibilityLabel="Quitar fecha de fin"
-              className="h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50"
+              className="h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950"
             >
               <X size={20} color="#64748b" />
             </Pressable>
           ) : null}
         </View>
         {errors.end_date && (
-          <Text className="mt-1 text-sm text-red-600">{errors.end_date.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.end_date.message}</Text>
         )}
       </View>
 
       {/* NOTE */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-          Nota <Text className="text-gray-400 normal-case">(opcional)</Text>
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+          Nota <Text className="text-gray-400 dark:text-gray-500 normal-case">(opcional)</Text>
         </Text>
         <Controller
           control={control}
           name="note"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextInput
-              className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-base text-gray-900"
+              className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4 text-base text-gray-900 dark:text-gray-100"
               placeholder="Detalles adicionales"
               placeholderTextColor="#cbd5e1"
               value={value ?? ''}
@@ -318,7 +318,7 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
           )}
         />
         {errors.note && (
-          <Text className="mt-1 text-sm text-red-600">{errors.note.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.note.message}</Text>
         )}
       </View>
 

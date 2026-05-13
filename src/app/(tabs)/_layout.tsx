@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   Wallet,
 } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 
 import { useAppSession } from '@/features/auth/session';
 import { useSettings } from '@/features/settings/store';
@@ -15,6 +16,8 @@ export default function TabsLayout() {
   const onboardingDone = useSettings((s) => s.onboarding_completed);
   const biometricEnabled = useSettings((s) => s.biometric_enabled);
   const unlocked = useAppSession((s) => s.unlocked);
+  const { colorScheme: cs } = useColorScheme();
+  const isDark = cs === 'dark';
 
   if (!onboardingDone) {
     return <Redirect href="/onboarding" />;
@@ -27,8 +30,12 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#059669',
-        tabBarInactiveTintColor: '#94a3b8',
+        tabBarInactiveTintColor: isDark ? '#64748b' : '#94a3b8',
         tabBarLabelStyle: { fontSize: 11 },
+        tabBarStyle: {
+          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          borderTopColor: isDark ? '#1e293b' : '#e5e7eb',
+        },
         headerShown: false,
       }}
     >

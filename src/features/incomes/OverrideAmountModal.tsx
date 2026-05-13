@@ -66,21 +66,21 @@ export function OverrideAmountModal({
       >
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          className="w-full rounded-3xl bg-white p-6"
+          className="w-full rounded-3xl bg-white dark:bg-gray-900 p-6"
           style={{ maxWidth: 420 }}
         >
-          <Text className="text-xl font-bold text-gray-900">Ajustar monto</Text>
-          <Text className="mt-1 text-sm text-gray-500">
+          <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">Ajustar monto</Text>
+          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Cambia solo esta ocurrencia. La serie no se altera.
           </Text>
 
-          <Text className="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+          <Text className="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
             Monto en {currency}
           </Text>
-          <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-            <Text className="mr-2 text-xl font-semibold text-gray-400">{currencySymbol(currency)}</Text>
+          <View className="flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-3">
+            <Text className="mr-2 text-xl font-semibold text-gray-400 dark:text-gray-500">{currencySymbol(currency)}</Text>
             <TextInput
-              className="flex-1 text-xl font-semibold text-gray-900"
+              className="flex-1 text-xl font-semibold text-gray-900 dark:text-gray-100"
               keyboardType="decimal-pad"
               value={text}
               onChangeText={(t) => {
@@ -91,9 +91,9 @@ export function OverrideAmountModal({
               selectTextOnFocus
             />
           </View>
-          {error && <Text className="mt-1 text-sm text-red-600">{error}</Text>}
+          {error && <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</Text>}
 
-          <Text className="mt-3 text-sm text-gray-500">
+          <Text className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             Monto base del ingreso: {formatCents(baselineAmountCents, { currency })}
           </Text>
 
@@ -103,7 +103,7 @@ export function OverrideAmountModal({
               accessibilityRole="button"
               className="mt-3 self-start rounded-lg px-2 py-1 active:bg-gray-100"
             >
-              <Text className="text-sm font-semibold text-emerald-700">
+              <Text className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                 ↺ Volver al monto base
               </Text>
             </Pressable>
@@ -113,9 +113,9 @@ export function OverrideAmountModal({
             <Pressable
               onPress={onCancel}
               accessibilityRole="button"
-              className="flex-1 items-center rounded-2xl border border-gray-300 bg-white px-4 py-3 active:bg-gray-50"
+              className="flex-1 items-center rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-3 active:bg-gray-50"
             >
-              <Text className="text-base font-semibold text-gray-700">Cancelar</Text>
+              <Text className="text-base font-semibold text-gray-700 dark:text-gray-300">Cancelar</Text>
             </Pressable>
             <Pressable
               onPress={handleSave}

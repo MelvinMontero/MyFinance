@@ -86,7 +86,7 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
     <View className="gap-6">
       {/* MONEDA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Moneda
         </Text>
         <Controller
@@ -104,15 +104,15 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
                     accessibilityState={{ selected }}
                     className={
                       selected
-                        ? 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50 px-4 py-3'
-                        : 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3'
+                        ? 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-4 py-3'
+                        : 'flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3'
                     }
                   >
                     <Text
                       className={
                         selected
-                          ? 'text-xl font-bold text-emerald-800'
-                          : 'text-xl font-bold text-gray-500'
+                          ? 'text-xl font-bold text-emerald-800 dark:text-emerald-200'
+                          : 'text-xl font-bold text-gray-500 dark:text-gray-400'
                       }
                     >
                       {currencySymbol(opt)}
@@ -120,8 +120,8 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
                     <Text
                       className={
                         selected
-                          ? 'text-sm font-semibold text-emerald-800'
-                          : 'text-sm font-semibold text-gray-700'
+                          ? 'text-sm font-semibold text-emerald-800 dark:text-emerald-200'
+                          : 'text-sm font-semibold text-gray-700 dark:text-gray-300'
                       }
                     >
                       {opt}
@@ -136,19 +136,19 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
 
       {/* MONTO */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Monto en {currency}
         </Text>
         <Controller
           control={control}
           name="amount"
           render={({ field: { value, onChange, onBlur } }) => (
-            <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
-              <Text className="mr-2 text-2xl font-semibold text-gray-400">
+            <View className="flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4">
+              <Text className="mr-2 text-2xl font-semibold text-gray-400 dark:text-gray-500">
                 {currencySymbol(currency)}
               </Text>
               <TextInput
-                className="flex-1 text-2xl font-semibold text-gray-900"
+                className="flex-1 text-2xl font-semibold text-gray-900 dark:text-gray-100"
                 keyboardType="decimal-pad"
                 placeholder="0"
                 placeholderTextColor="#cbd5e1"
@@ -170,13 +170,13 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
           )}
         />
         {errors.amount && (
-          <Text className="mt-1 text-sm text-red-600">{errors.amount.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount.message}</Text>
         )}
       </View>
 
       {/* NOMBRE */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Nombre
         </Text>
         <Controller
@@ -184,7 +184,7 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
           name="name"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextInput
-              className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-base text-gray-900"
+              className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4 text-base text-gray-900 dark:text-gray-100"
               placeholder="Renta, Netflix, Internet…"
               placeholderTextColor="#cbd5e1"
               value={value}
@@ -195,13 +195,13 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
           )}
         />
         {errors.name && (
-          <Text className="mt-1 text-sm text-red-600">{errors.name.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name.message}</Text>
         )}
       </View>
 
       {/* CATEGORÍA */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Categoría
         </Text>
         <Controller
@@ -224,8 +224,8 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
                       accessibilityState={{ selected }}
                       className={
                         selected
-                          ? 'flex-row items-center gap-3 rounded-2xl border-2 border-emerald-600 bg-emerald-50 px-4 py-3'
-                          : 'flex-row items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3'
+                          ? 'flex-row items-center gap-3 rounded-2xl border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-4 py-3'
+                          : 'flex-row items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3'
                       }
                     >
                       <View
@@ -237,8 +237,8 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
                       <Text
                         className={
                           selected
-                            ? 'flex-1 text-base font-semibold text-emerald-800'
-                            : 'flex-1 text-base font-semibold text-gray-900'
+                            ? 'flex-1 text-base font-semibold text-emerald-800 dark:text-emerald-200'
+                            : 'flex-1 text-base font-semibold text-gray-900 dark:text-gray-100'
                         }
                       >
                         {cat.name}
@@ -256,23 +256,23 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
           )}
         />
         {errors.category_id && (
-          <Text className="mt-1 text-sm text-red-600">{errors.category_id.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.category_id.message}</Text>
         )}
       </View>
 
       {/* DÍA DE PAGO */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Día de pago del mes
         </Text>
         <Controller
           control={control}
           name="due_day"
           render={({ field: { value, onChange, onBlur } }) => (
-            <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
-              <Text className="mr-2 text-base text-gray-500">Día</Text>
+            <View className="flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4">
+              <Text className="mr-2 text-base text-gray-500 dark:text-gray-400">Día</Text>
               <TextInput
-                className="flex-1 text-2xl font-semibold text-gray-900"
+                className="flex-1 text-2xl font-semibold text-gray-900 dark:text-gray-100"
                 keyboardType="number-pad"
                 placeholder="1"
                 placeholderTextColor="#cbd5e1"
@@ -284,49 +284,49 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
                 onBlur={onBlur}
                 maxLength={2}
               />
-              <Text className="ml-2 text-sm text-gray-500">/ 31</Text>
+              <Text className="ml-2 text-sm text-gray-500 dark:text-gray-400">/ 31</Text>
             </View>
           )}
         />
-        <Text className="mt-1 text-xs text-gray-500">
+        <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Si elegís 31 y el mes tiene menos días, contamos el último día del mes.
         </Text>
         {errors.due_day && (
-          <Text className="mt-1 text-sm text-red-600">{errors.due_day.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.due_day.message}</Text>
         )}
       </View>
 
       {/* START DATE */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           Vigente desde
         </Text>
         <Pressable
           onPress={() => openDatePicker('start_date')}
-          className="flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
+          className="flex-row items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4"
         >
-          <Text className="text-base text-gray-900">
+          <Text className="text-base text-gray-900 dark:text-gray-100">
             {startDateStr ? formatDateEs(startDateStr) : 'Seleccionar fecha'}
           </Text>
           <Calendar size={20} color="#64748b" />
         </Pressable>
         {errors.start_date && (
-          <Text className="mt-1 text-sm text-red-600">{errors.start_date.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.start_date.message}</Text>
         )}
       </View>
 
       {/* END DATE */}
       <View>
-        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-          Hasta <Text className="text-gray-400 normal-case">(opcional)</Text>
+        <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+          Hasta <Text className="text-gray-400 dark:text-gray-500 normal-case">(opcional)</Text>
         </Text>
         <View className="flex-row items-center gap-2">
           <Pressable
             onPress={() => openDatePicker('end_date')}
-            className="flex-1 flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
+            className="flex-1 flex-row items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-5 py-4"
           >
             <Text
-              className={endDateStr ? 'text-base text-gray-900' : 'text-base text-gray-400'}
+              className={endDateStr ? 'text-base text-gray-900 dark:text-gray-100' : 'text-base text-gray-400 dark:text-gray-500'}
             >
               {endDateStr ? formatDateEs(endDateStr) : 'Sin fecha de fin'}
             </Text>
@@ -338,14 +338,14 @@ export function FixedExpenseForm({ defaultValues, onSubmit, submitLabel }: Props
                 setValue('end_date', '', { shouldValidate: true, shouldDirty: true })
               }
               accessibilityLabel="Quitar fecha de fin"
-              className="h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50"
+              className="h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950"
             >
               <X size={20} color="#64748b" />
             </Pressable>
           ) : null}
         </View>
         {errors.end_date && (
-          <Text className="mt-1 text-sm text-red-600">{errors.end_date.message}</Text>
+          <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.end_date.message}</Text>
         )}
       </View>
 

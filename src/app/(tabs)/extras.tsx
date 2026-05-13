@@ -54,19 +54,19 @@ export default function ExtrasScreen() {
   const periodLabel = formatPeriodLabel(period);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <View className="px-6 pb-4 pt-4">
-        <Text className="text-3xl font-bold text-gray-900">Extras</Text>
-        <Text className="mt-1 text-base text-gray-500">{periodLabel}</Text>
+        <Text className="text-3xl font-bold text-gray-900 dark:text-gray-100">Extras</Text>
+        <Text className="mt-1 text-base text-gray-500 dark:text-gray-400">{periodLabel}</Text>
 
-        <View className="mt-4 rounded-2xl bg-amber-50 p-4">
-          <Text className="text-sm font-semibold uppercase tracking-wide text-amber-700">
+        <View className="mt-4 rounded-2xl bg-amber-50 dark:bg-amber-950 p-4">
+          <Text className="text-sm font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
             Gastado este mes
           </Text>
-          <Text className="mt-1 text-3xl font-bold text-amber-900">
+          <Text className="mt-1 text-3xl font-bold text-amber-900 dark:text-amber-100">
             {formatCents(total, { currency: liveCurrency })}
           </Text>
-          <Text className="mt-1 text-sm text-amber-800">
+          <Text className="mt-1 text-sm text-amber-800 dark:text-amber-200">
             {items.length === 0
               ? 'Aún no hay gastos extras registrados'
               : items.length === 1
@@ -89,12 +89,12 @@ export default function ExtrasScreen() {
         )}
         ListEmptyComponent={
           loading ? null : (
-            <View className="mt-4 items-center rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-12">
+            <View className="mt-4 items-center rounded-3xl border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-6 py-12">
               <ShoppingBag size={48} color="#cbd5e1" strokeWidth={1.5} />
-              <Text className="mt-4 text-lg font-semibold text-gray-700">
+              <Text className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
                 Sin gastos extras
               </Text>
-              <Text className="mt-1 text-center text-sm text-gray-500">
+              <Text className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
                 Cafés, comidas fuera, salidas — todo lo que sale del dinero libre.
               </Text>
               <Pressable

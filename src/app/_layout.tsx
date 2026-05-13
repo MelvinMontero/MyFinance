@@ -2,7 +2,7 @@ import '../../global.css';
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { colorScheme } from 'nativewind';
+import { colorScheme, useColorScheme } from 'nativewind';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -26,6 +26,8 @@ export default function RootLayout() {
 function RootContent() {
   const loaded = useSettings((s) => s.loaded);
   const theme = useSettings((s) => s.theme);
+  const { colorScheme: cs } = useColorScheme();
+  const isDark = cs === 'dark';
   const [error, setError] = useState<string | null>(null);
 
   // Boot: initDb + load settings + setup notifs.
@@ -48,23 +50,33 @@ function RootContent() {
 
   if (error) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#fff' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: isDark ? '#0f172a' : '#fff' }}>
         <Text style={{ fontSize: 16, fontWeight: '700', color: '#dc2626' }}>Error al iniciar</Text>
-        <Text style={{ marginTop: 8, color: '#475569', textAlign: 'center' }}>{error}</Text>
+        <Text style={{ marginTop: 8, color: isDark ? '#cbd5e1' : '#475569', textAlign: 'center' }}>{error}</Text>
       </View>
     );
   }
 
   if (!loaded) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? '#0f172a' : '#fff' }}>
         <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
 
+  const headerBg = isDark ? '#0f172a' : '#ffffff';
+  const headerText = isDark ? '#f1f5f9' : '#0f172a';
+
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        contentStyle: { backgroundColor: isDark ? '#030712' : '#f9fafb' },
+        headerStyle: { backgroundColor: headerBg },
+        headerTitleStyle: { fontWeight: '700', color: headerText },
+        headerTintColor: headerText,
+      }}
+    >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="onboarding"
@@ -87,8 +99,9 @@ function RootContent() {
         options={{
           presentation: 'modal',
           title: 'Nuevo ingreso',
-          headerStyle: { backgroundColor: '#ffffff' },
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
         }}
       />
       <Stack.Screen
@@ -96,8 +109,9 @@ function RootContent() {
         options={{
           presentation: 'modal',
           title: 'Editar ingreso',
-          headerStyle: { backgroundColor: '#ffffff' },
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
         }}
       />
       <Stack.Screen
@@ -105,8 +119,9 @@ function RootContent() {
         options={{
           presentation: 'modal',
           title: 'Nuevo gasto fijo',
-          headerStyle: { backgroundColor: '#ffffff' },
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
         }}
       />
       <Stack.Screen
@@ -114,8 +129,9 @@ function RootContent() {
         options={{
           presentation: 'modal',
           title: 'Editar gasto fijo',
-          headerStyle: { backgroundColor: '#ffffff' },
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
         }}
       />
       <Stack.Screen
@@ -123,8 +139,9 @@ function RootContent() {
         options={{
           presentation: 'modal',
           title: 'Nuevo gasto extra',
-          headerStyle: { backgroundColor: '#ffffff' },
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
         }}
       />
       <Stack.Screen
@@ -132,8 +149,9 @@ function RootContent() {
         options={{
           presentation: 'modal',
           title: 'Editar gasto extra',
-          headerStyle: { backgroundColor: '#ffffff' },
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
         }}
       />
     </Stack>

@@ -124,7 +124,7 @@ export default function EditIncomeScreen() {
 
   if (loading || !income) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
         <ActivityIndicator size="large" color="#059669" />
       </View>
     );
@@ -136,7 +136,7 @@ export default function EditIncomeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        className="flex-1 bg-white"
+        className="flex-1 bg-white dark:bg-gray-900"
         contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -156,10 +156,10 @@ export default function EditIncomeScreen() {
 
         {/* OCURRENCIAS */}
         <View className="mt-8">
-          <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+          <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
             Ocurrencias proyectadas
           </Text>
-          <Text className="mb-3 text-sm text-gray-500">
+          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
             Tocá el círculo para confirmar que llegó. Tocá el monto para ajustar solo esa ocurrencia.
           </Text>
           <OccurrencesList
@@ -175,10 +175,10 @@ export default function EditIncomeScreen() {
           <Pressable
             onPress={confirmDelete}
             accessibilityRole="button"
-            className="flex-row items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 active:bg-red-100"
+            className="flex-row items-center justify-center gap-2 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 active:bg-red-100"
           >
             <Trash2 size={18} color="#dc2626" />
-            <Text className="text-base font-semibold text-red-700">Eliminar ingreso</Text>
+            <Text className="text-base font-semibold text-red-700 dark:text-red-300">Eliminar ingreso</Text>
           </Pressable>
         </View>
       </ScrollView>

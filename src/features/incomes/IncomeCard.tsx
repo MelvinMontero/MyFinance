@@ -23,18 +23,18 @@ export function IncomeCard({ income, onPress }: Props) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      className="flex-row items-center rounded-2xl border border-gray-200 bg-white p-4 active:bg-gray-50"
+      className="flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 active:bg-gray-50"
     >
       <View className="flex-1">
         <View className="flex-row items-baseline justify-between">
-          <Text className="flex-1 text-base font-semibold text-gray-900" numberOfLines={1}>
+          <Text className="flex-1 text-base font-semibold text-gray-900 dark:text-gray-100" numberOfLines={1}>
             {income.source ?? 'Ingreso sin nombre'}
           </Text>
-          <Text className="ml-2 text-base font-bold text-emerald-700">
+          <Text className="ml-2 text-base font-bold text-emerald-700 dark:text-emerald-300">
             {formatCents(income.amount_cents, { currency: income.currency })}
           </Text>
         </View>
-        <Text className="mt-1 text-sm text-gray-500">
+        <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {FREQUENCY_LABEL[income.frequency]} · desde {formatDateShort(income.start_date)}
           {income.end_date ? ` · hasta ${formatDateShort(income.end_date)}` : ''}
         </Text>

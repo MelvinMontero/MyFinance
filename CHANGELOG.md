@@ -4,6 +4,27 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-05-13 — Fase 7 (parte 2): Dark mode en toda la app
+
+### Added
+- **Dark mode aplicado a todas las pantallas** (21 archivos, 342 `dark:` variants automáticos via script `scripts/add-dark.js`).
+- **Tab bar** ahora respeta el tema (color de fondo + borde + tint inactivo cambian según `useColorScheme()` de nativewind).
+- **Stack headers** de las pantallas modales (income/new, fixed-expense/[id], etc) usan colores dinámicos: header bg/text/tint cambian con el tema.
+- **Content background** del Stack root usa gris oscuro en modo oscuro (evita el flash blanco entre transitions).
+
+### Fixed
+- El script de transformación masiva ahora **excluye prefijos de modifier** (`active:`, `hover:`, `focus:`, etc) en el lookbehind del regex. Sin esto, `active:bg-gray-100` se hubiera vuelto `active:bg-gray-100 dark:bg-gray-800` (fondo aplicado siempre en dark, no solo al presionar).
+- Configuración de ESLint: removida la regla `@typescript-eslint/no-unused-vars` que dejó de funcionar porque el plugin `@typescript-eslint` ya no se carga desde `eslint-config-expo` con las deps actuales.
+
+### Script de mantenimiento
+- `scripts/add-dark.js` queda en el repo. Si en el futuro se agregan más pantallas, se puede re-ejecutar — es idempotente gracias al lookbehind `(?<!dark:)`.
+
+### Verificaciones
+- `npx tsc --noEmit`: 0 errores.
+- `npm test`: 59/59.
+- `npm run lint`: 0 warnings.
+- `npx expo-doctor`: 17/17.
+
 ## [0.8.0] - 2026-05-13 — Fase 7: Polish (parte 1)
 
 ### Added — Onboarding
