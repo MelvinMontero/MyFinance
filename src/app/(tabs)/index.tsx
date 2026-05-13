@@ -44,7 +44,6 @@ export default function HomeScreen() {
     paid: 0,
     total: 0,
   });
-  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
 
   const liveCurrency = useSettings((s) => s.currency);
   const liveSavingsPercent = useSettings((s) => s.savings_percent);
@@ -78,17 +77,6 @@ export default function HomeScreen() {
     }, [liveCurrency, liveSavingsPercent]),
   );
 
-  /**
-   * En vista quincenal todos los montos se muestran como promedio por
-   * paycheck (mensual / 2). El conteo "X de Y pagados" no cambia (es
-   * stateful no monetario). Las etiquetas se ajustan también.
-   * NO uso useCallback ni useMemo acá — funciones simples y baratas, y
-   * useCallback con dep [viewMode] aparentemente choca con Fast Refresh
-   * de Expo Router en algún edge case.
-   */
-  const halve = (cents: number): number =>
-    viewMode === 'biweekly' ? Math.round(cents / 2) : cents;
-  const periodSuffix = viewMode === 'biweekly' ? 'por quincena' : 'este mes';
   const periodLabel = formatPeriodLabel(currentPeriod());
 
   if (status === 'loading') {
@@ -112,11 +100,6 @@ export default function HomeScreen() {
   if (!budget) return null;
 
   const hasIncome = budget.income > 0;
-  const subtitleFreeMoney = budget.isOverspent
-    ? `Gastaste ${formatCents(halve(budget.variableExpensesSpent), { currency: liveCurrency })} de tu dinero libre`
-    : budget.variableExpensesSpent > 0
-      ? `Gastaste ${formatCents(halve(budget.variableExpensesSpent), { currency: liveCurrency })} ${periodSuffix}`
-      : 'Lo que podés gastar en gustos y extras';
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
@@ -129,88 +112,18 @@ export default function HomeScreen() {
           <Text className="mt-1 text-3xl font-bold text-gray-900">MyFinance</Text>
         </View>
 
-        {/* TOGGLE Mensual / Quincenal */}
-        {hasIncome && (
-          <View className="mt-4 flex-row self-start rounded-2xl bg-gray-200 p-1">
-            <ViewModeButton
-              label="Mensual"
-              selected={viewMode === 'monthly'}
-              onPress={() => setViewMode('monthly')}
-            />
-            <ViewModeButton
-              label="Quincenal"
-              selected={viewMode === 'biweekly'}
-              onPress={() => setViewMode('biweekly')}
-            />
-          </View>
-        )}
-
-        {/* HERO */}
+        {/* TOGGLE + SOBRES — se aísla en su propio componente para que el
+            cambio de viewMode no haga re-render del HomeScreen y evite
+            chocar con el wrapper de expo-router (printUpgradeWarning). */}
         {hasIncome ? (
-          <HeroBlock
+          <BucketsBlock
             budget={budget}
             currency={liveCurrency}
-            halve={halve}
-            periodSuffix={periodSuffix}
+            savingsPercent={liveSavingsPercent}
+            paymentSummary={paymentSummary}
           />
         ) : (
           <EmptyState onAddIncome={() => router.push('/income/new')} />
-        )}
-
-        {/* SOBRES */}
-        {hasIncome && (
-          <View className="mt-6 gap-3">
-            <BucketCard
-              Icon={PiggyBank}
-              title="Ahorro"
-              amount={halve(budget.savings)}
-              currency={liveCurrency}
-              color="emerald"
-              subtitle={`Meta — ${liveSavingsPercent}% del ingreso ${periodSuffix}`}
-            />
-            <BucketCard
-              Icon={Receipt}
-              title="Gastos fijos"
-              amount={halve(budget.fixedExpenses)}
-              currency={liveCurrency}
-              color="blue"
-              subtitle={
-                viewMode === 'biweekly'
-                  ? 'Renta, servicios, suscripciones · promedio'
-                  : 'Renta, servicios, suscripciones'
-              }
-              progress={{
-                value: paymentSummary.paid,
-                max: paymentSummary.total,
-                label:
-                  paymentSummary.total === 0
-                    ? 'Sin gastos fijos vigentes este mes'
-                    : paymentSummary.paid === paymentSummary.total
-                      ? `¡${paymentSummary.total} de ${paymentSummary.total} pagados este mes!`
-                      : `${paymentSummary.paid} de ${paymentSummary.total} pagados este mes`,
-              }}
-            />
-            <BucketCard
-              Icon={Wallet}
-              title="Dinero libre"
-              amount={halve(budget.freeMoney)}
-              currency={liveCurrency}
-              color="amber"
-              subtitle={subtitleFreeMoney}
-              progress={
-                budget.freeMoney > 0
-                  ? {
-                      value: budget.variableExpensesSpent,
-                      max: budget.freeMoney,
-                      label:
-                        budget.variableExpensesSpent === 0
-                          ? `Quedan ${formatCents(halve(budget.freeMoneyRemaining), { currency: liveCurrency })}`
-                          : `Quedan ${formatCents(halve(budget.freeMoneyRemaining), { currency: liveCurrency })} de ${formatCents(halve(budget.freeMoney), { currency: liveCurrency })}`,
-                    }
-                  : undefined
-              }
-            />
-          </View>
         )}
 
         {/* WARNING over-budget */}
@@ -288,78 +201,162 @@ export default function HomeScreen() {
   );
 }
 
-function ViewModeButton({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      className={
-        selected
-          ? 'rounded-xl bg-white px-5 py-2 shadow-sm'
-          : 'rounded-xl px-5 py-2'
-      }
-    >
-      <Text
-        className={
-          selected
-            ? 'text-sm font-bold text-gray-900'
-            : 'text-sm font-medium text-gray-600'
-        }
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function HeroBlock({
+/**
+ * Componente aislado para el toggle y los 3 sobres.
+ * Su propio useState(viewMode) NO escala el re-render a HomeScreen,
+ * lo cual previene un choque con el wrapper de expo-router que en re-render
+ * intenta llamar `printUpgradeWarning` sobre el contexto de navegación.
+ */
+function BucketsBlock({
   budget,
   currency,
-  halve,
-  periodSuffix,
+  savingsPercent,
+  paymentSummary,
 }: {
   budget: BudgetForPeriod;
   currency: string;
-  halve: (cents: number) => number;
-  periodSuffix: string;
+  savingsPercent: number;
+  paymentSummary: { paid: number; total: number };
 }) {
-  if (budget.isOverBudget) {
-    return (
-      <View className="mt-6 rounded-3xl bg-red-50 p-6">
-        <Text className="text-sm font-semibold uppercase tracking-wide text-red-700">
-          Sobre presupuesto
-        </Text>
-        <Text className="mt-2 text-5xl font-bold text-red-700">
-          −{formatCents(halve(Math.abs(budget.freeMoney)), { currency })}
-        </Text>
-        <Text className="mt-1 text-sm text-red-800">
-          Te faltan {formatCents(halve(Math.abs(budget.freeMoney)), { currency })} para cubrir ahorro + fijos.
-        </Text>
-      </View>
-    );
-  }
+  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
+
+  const halve = (cents: number): number =>
+    viewMode === 'biweekly' ? Math.round(cents / 2) : cents;
+  const periodSuffix = viewMode === 'biweekly' ? 'por quincena' : 'este mes';
+
+  const subtitleFreeMoney = budget.isOverspent
+    ? `Gastaste ${formatCents(halve(budget.variableExpensesSpent), { currency })} de tu dinero libre`
+    : budget.variableExpensesSpent > 0
+      ? `Gastaste ${formatCents(halve(budget.variableExpensesSpent), { currency })} ${periodSuffix}`
+      : 'Lo que podés gastar en gustos y extras';
 
   return (
-    <View className="mt-6 rounded-3xl bg-emerald-50 p-6">
-      <Text className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-        Te quedan
-      </Text>
-      <Text className="mt-2 text-5xl font-bold text-emerald-900">
-        {formatCents(halve(budget.freeMoneyRemaining), { currency })}
-      </Text>
-      <Text className="mt-1 text-base text-emerald-800">
-        de {formatCents(halve(budget.freeMoney), { currency })} de dinero libre {periodSuffix}
-      </Text>
-    </View>
+    <>
+      {/* TOGGLE Mensual / Quincenal */}
+      <View className="mt-4 flex-row self-start rounded-2xl bg-gray-200 p-1">
+        <Pressable
+          onPress={() => setViewMode('monthly')}
+          accessibilityRole="button"
+          accessibilityState={{ selected: viewMode === 'monthly' }}
+          className={
+            viewMode === 'monthly'
+              ? 'rounded-xl bg-white px-5 py-2'
+              : 'rounded-xl px-5 py-2'
+          }
+        >
+          <Text
+            className={
+              viewMode === 'monthly'
+                ? 'text-sm font-bold text-gray-900'
+                : 'text-sm font-medium text-gray-600'
+            }
+          >
+            Mensual
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setViewMode('biweekly')}
+          accessibilityRole="button"
+          accessibilityState={{ selected: viewMode === 'biweekly' }}
+          className={
+            viewMode === 'biweekly'
+              ? 'rounded-xl bg-white px-5 py-2'
+              : 'rounded-xl px-5 py-2'
+          }
+        >
+          <Text
+            className={
+              viewMode === 'biweekly'
+                ? 'text-sm font-bold text-gray-900'
+                : 'text-sm font-medium text-gray-600'
+            }
+          >
+            Quincenal
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* HERO */}
+      {budget.isOverBudget ? (
+        <View className="mt-6 rounded-3xl bg-red-50 p-6">
+          <Text className="text-sm font-semibold uppercase tracking-wide text-red-700">
+            Sobre presupuesto
+          </Text>
+          <Text className="mt-2 text-5xl font-bold text-red-700">
+            −{formatCents(halve(Math.abs(budget.freeMoney)), { currency })}
+          </Text>
+          <Text className="mt-1 text-sm text-red-800">
+            Te faltan {formatCents(halve(Math.abs(budget.freeMoney)), { currency })} para cubrir ahorro + fijos.
+          </Text>
+        </View>
+      ) : (
+        <View className="mt-6 rounded-3xl bg-emerald-50 p-6">
+          <Text className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+            Te quedan
+          </Text>
+          <Text className="mt-2 text-5xl font-bold text-emerald-900">
+            {formatCents(halve(budget.freeMoneyRemaining), { currency })}
+          </Text>
+          <Text className="mt-1 text-base text-emerald-800">
+            de {formatCents(halve(budget.freeMoney), { currency })} de dinero libre {periodSuffix}
+          </Text>
+        </View>
+      )}
+
+      {/* SOBRES */}
+      <View className="mt-6 gap-3">
+        <BucketCard
+          Icon={PiggyBank}
+          title="Ahorro"
+          amount={halve(budget.savings)}
+          currency={currency}
+          color="emerald"
+          subtitle={`Meta — ${savingsPercent}% del ingreso ${periodSuffix}`}
+        />
+        <BucketCard
+          Icon={Receipt}
+          title="Gastos fijos"
+          amount={halve(budget.fixedExpenses)}
+          currency={currency}
+          color="blue"
+          subtitle={
+            viewMode === 'biweekly'
+              ? 'Renta, servicios, suscripciones · promedio'
+              : 'Renta, servicios, suscripciones'
+          }
+          progress={{
+            value: paymentSummary.paid,
+            max: paymentSummary.total,
+            label:
+              paymentSummary.total === 0
+                ? 'Sin gastos fijos vigentes este mes'
+                : paymentSummary.paid === paymentSummary.total
+                  ? `¡${paymentSummary.total} de ${paymentSummary.total} pagados este mes!`
+                  : `${paymentSummary.paid} de ${paymentSummary.total} pagados este mes`,
+          }}
+        />
+        <BucketCard
+          Icon={Wallet}
+          title="Dinero libre"
+          amount={halve(budget.freeMoney)}
+          currency={currency}
+          color="amber"
+          subtitle={subtitleFreeMoney}
+          progress={
+            budget.freeMoney > 0
+              ? {
+                  value: budget.variableExpensesSpent,
+                  max: budget.freeMoney,
+                  label:
+                    budget.variableExpensesSpent === 0
+                      ? `Quedan ${formatCents(halve(budget.freeMoneyRemaining), { currency })}`
+                      : `Quedan ${formatCents(halve(budget.freeMoneyRemaining), { currency })} de ${formatCents(halve(budget.freeMoney), { currency })}`,
+                }
+              : undefined
+          }
+        />
+      </View>
+    </>
   );
 }
 
