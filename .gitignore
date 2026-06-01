@@ -49,3 +49,10 @@ coverage/
 # generated native folders
 /ios
 /android
+
+# Artefactos locales de la sesion de planificacion (no versionar)
+qr.png
+expo-start.log
+expo-tunnel.log
+iniciar-myfinance.bat
+iniciar-myfinance-tunel.bat
