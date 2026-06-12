@@ -121,4 +121,48 @@ export const migrations: Migration[] = [
       ALTER TABLE settings ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 0;
     `,
   },
+  {
+    version: 4,
+    description: 'metas de ahorro (sinking funds) + ledger de aportes + flags de recordatorios',
+    sql: `
+      CREATE TABLE IF NOT EXISTS goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_amount_cents INTEGER NOT NULL,
+        initial_amount_cents INTEGER NOT NULL DEFAULT 0,
+        currency TEXT NOT NULL DEFAULT 'CRC',
+        due_date TEXT NOT NULL,
+        funding_source TEXT NOT NULL DEFAULT 'off_top'
+          CHECK(funding_source IN ('off_top','from_savings')),
+        category_id TEXT REFERENCES categories(id),
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK(status IN ('active','completed','archived')),
+        note TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS goal_contributions (
+        id TEXT PRIMARY KEY,
+        goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+        amount_cents INTEGER NOT NULL,
+        occurred_at TEXT NOT NULL,
+        period TEXT NOT NULL,
+        income_occurrence_id TEXT REFERENCES income_occurrences(id) ON DELETE SET NULL,
+        source TEXT NOT NULL DEFAULT 'auto' CHECK(source IN ('auto','manual')),
+        note TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);
+      CREATE INDEX IF NOT EXISTS idx_goal_contributions_goal ON goal_contributions(goal_id);
+      CREATE INDEX IF NOT EXISTS idx_goal_contributions_period ON goal_contributions(period);
+      CREATE INDEX IF NOT EXISTS idx_goal_contributions_occurrence ON goal_contributions(income_occurrence_id);
+
+      ALTER TABLE settings ADD COLUMN payday_reminders_enabled INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE settings ADD COLUMN goal_due_reminders_enabled INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE settings ADD COLUMN behind_reminders_enabled INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE settings ADD COLUMN goal_due_lead_days INTEGER NOT NULL DEFAULT 5;
+    `,
+  },
 ];

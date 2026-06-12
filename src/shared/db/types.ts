@@ -14,6 +14,10 @@ export interface Settings {
   biometric_enabled: SqliteBoolean;
   notifications_enabled: SqliteBoolean;
   onboarding_completed: SqliteBoolean;
+  payday_reminders_enabled: SqliteBoolean;
+  goal_due_reminders_enabled: SqliteBoolean;
+  behind_reminders_enabled: SqliteBoolean;
+  goal_due_lead_days: number;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +87,37 @@ export interface VariableExpense {
   currency: string; // ISO 4217 — agregado en migración v2
   created_at: string;
   updated_at: string;
+}
+
+export type GoalFundingSource = 'off_top' | 'from_savings';
+export type GoalStatus = 'active' | 'completed' | 'archived';
+export type ContributionSource = 'auto' | 'manual';
+
+export interface Goal {
+  id: string;
+  name: string;
+  target_amount_cents: number;
+  initial_amount_cents: number; // "prima": dinero que ya tenías al crear la meta
+  currency: string; // ISO 4217
+  due_date: string; // 'YYYY-MM-DD'
+  funding_source: GoalFundingSource;
+  category_id: string | null;
+  status: GoalStatus;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  amount_cents: number;
+  occurred_at: string; // 'YYYY-MM-DD'
+  period: string; // 'YYYY-MM'
+  income_occurrence_id: string | null;
+  source: ContributionSource;
+  note: string | null;
+  created_at: string;
 }
 
 export interface MonthlySnapshot {
