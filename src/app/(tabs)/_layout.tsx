@@ -5,6 +5,7 @@ import {
   Receipt,
   Settings as SettingsIcon,
   ShoppingBag,
+  Target,
   Wallet,
 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
@@ -31,7 +32,7 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: '#059669',
         tabBarInactiveTintColor: isDark ? '#64748b' : '#94a3b8',
-        tabBarLabelStyle: { fontSize: 11 },
+        tabBarLabelStyle: { fontSize: 10 },
         tabBarStyle: {
           backgroundColor: isDark ? '#0f172a' : '#ffffff',
           borderTopColor: isDark ? '#1e293b' : '#e5e7eb',
@@ -58,6 +59,13 @@ export default function TabsLayout() {
         options={{
           title: 'Fijos',
           tabBarIcon: ({ color, size }) => <Receipt color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="goals"
+        options={{
+          title: 'Metas',
+          tabBarIcon: ({ color, size }) => <Target color={color} size={size} />,
         }}
       />
       <Tabs.Screen

@@ -9,7 +9,7 @@ interface IconProps {
   strokeWidth?: number;
 }
 
-export type BucketColor = 'emerald' | 'blue' | 'amber';
+export type BucketColor = 'emerald' | 'blue' | 'amber' | 'violet';
 
 interface Props {
   Icon: ComponentType<IconProps>;
@@ -57,6 +57,13 @@ const TONES: Record<BucketColor, {
     amountColor: 'text-amber-900 dark:text-amber-100',
     barFill: 'bg-amber-500',
     cardBorder: 'border-amber-200 dark:border-amber-800',
+  },
+  violet: {
+    iconBg: 'bg-violet-100 dark:bg-violet-900',
+    iconColor: '#7c3aed',
+    amountColor: 'text-violet-900 dark:text-violet-100',
+    barFill: 'bg-violet-500',
+    cardBorder: 'border-violet-200 dark:border-violet-800',
   },
 };
 

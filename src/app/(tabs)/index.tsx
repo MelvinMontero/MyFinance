@@ -6,6 +6,7 @@ import {
   PiggyBank,
   Plus,
   Receipt,
+  Target,
   Wallet,
 } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
@@ -27,6 +28,9 @@ import {
   currentPeriod,
   getPaymentSummary,
 } from '@/features/fixed-expenses/repository';
+import { nextPaydayOnOrAfter } from '@/features/goals/paydays';
+import { listContributionsByPeriod, listGoals } from '@/features/goals/repository';
+import { computeReservations } from '@/features/goals/reservations';
 import { useSettings } from '@/features/settings/store';
 import { initDb } from '@/shared/db';
 import { formatCents } from '@/shared/utils/money';
@@ -44,6 +48,10 @@ export default function HomeScreen() {
     paid: 0,
     total: 0,
   });
+  const [nextReservation, setNextReservation] = useState<{
+    payday: string;
+    total: number;
+  } | null>(null);
 
   const liveCurrency = useSettings((s) => s.currency);
   const liveSavingsPercent = useSettings((s) => s.savings_percent);
@@ -64,6 +72,34 @@ export default function HomeScreen() {
           if (cancelled) return;
           setBudget(b);
           setPaymentSummary(summary);
+
+          // Recordatorio de reserva: ¿la próxima quincena tiene reservas
+          // pendientes (sin aportes registrados ese día)?
+          const today = new Date().toISOString().slice(0, 10);
+          const payday = nextPaydayOnOrAfter(today);
+          const activeGoals = await listGoals({ status: 'active' });
+          const res = computeReservations({
+            asOf: payday,
+            currency: liveCurrency,
+            goals: activeGoals.map((g) => ({
+              id: g.id,
+              name: g.name,
+              currency: g.currency,
+              targetAmount: g.target_amount_cents,
+              initialAmount: g.initial_amount_cents,
+              contributedAmount: g.contributed_cents,
+              dueDate: g.due_date,
+              fundingSource: g.funding_source,
+            })),
+          });
+          let pendingReservation: { payday: string; total: number } | null = null;
+          if (res.total > 0) {
+            const periodContribs = await listContributionsByPeriod(payday.slice(0, 7));
+            const alreadyReserved = periodContribs.some((c) => c.occurred_at === payday);
+            if (!alreadyReserved) pendingReservation = { payday, total: res.total };
+          }
+          if (cancelled) return;
+          setNextReservation(pendingReservation);
           setStatus('ready');
         } catch (err) {
           if (cancelled) return;
@@ -121,9 +157,44 @@ export default function HomeScreen() {
             currency={liveCurrency}
             savingsPercent={liveSavingsPercent}
             paymentSummary={paymentSummary}
+            onViewGoals={() => router.push('/goals')}
           />
         ) : (
           <EmptyState onAddIncome={() => router.push('/income/new')} />
+        )}
+
+        {/* RECORDATORIO DE RESERVA — próxima quincena con reservas pendientes */}
+        {nextReservation && (
+          <Pressable
+            onPress={() => router.push('/goals')}
+            accessibilityRole="button"
+            className="mt-4 flex-row items-center gap-3 rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950 p-4 active:opacity-70"
+          >
+            <Target size={20} color="#7c3aed" strokeWidth={2} />
+            <Text className="flex-1 text-sm text-violet-900 dark:text-violet-100">
+              Tu próxima quincena ({formatShortDate(nextReservation.payday)}): apartá{' '}
+              <Text className="font-bold">
+                {formatCents(nextReservation.total, { currency: liveCurrency })}
+              </Text>{' '}
+              para tus metas.
+            </Text>
+          </Pressable>
+        )}
+
+        {/* WARNING sobrecompromiso del ahorro */}
+        {budget.isSavingsOvercommitted && (
+          <View className="mt-4 flex-row items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-4">
+            <AlertTriangle size={20} color="#d97706" strokeWidth={2} />
+            <View className="flex-1">
+              <Text className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                Metas mayores que tu ahorro
+              </Text>
+              <Text className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                Tus metas comprometen más que tu ahorro del mes. Subí el % de ahorro o ajustá una
+                meta.
+              </Text>
+            </View>
+          </View>
         )}
 
         {/* WARNING over-budget */}
@@ -212,11 +283,13 @@ function BucketsBlock({
   currency,
   savingsPercent,
   paymentSummary,
+  onViewGoals,
 }: {
   budget: BudgetForPeriod;
   currency: string;
   savingsPercent: number;
   paymentSummary: { paid: number; total: number };
+  onViewGoals: () => void;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
 
@@ -355,6 +428,27 @@ function BucketsBlock({
               : undefined
           }
         />
+        {budget.goalReservationsOffTop + budget.goalReservationsFromSavings > 0 && (
+          <>
+            <BucketCard
+              Icon={Target}
+              title="Metas"
+              amount={halve(budget.goalReservationsOffTop + budget.goalReservationsFromSavings)}
+              currency={currency}
+              color="violet"
+              subtitle="Reservado para tus metas"
+            />
+            <Pressable
+              onPress={onViewGoals}
+              accessibilityRole="button"
+              className="self-end px-2 py-1 active:opacity-70"
+            >
+              <Text className="text-sm font-semibold text-violet-700 dark:text-violet-300">
+                Ver metas →
+              </Text>
+            </Pressable>
+          </>
+        )}
       </View>
     </>
   );
@@ -379,6 +473,13 @@ function EmptyState({ onAddIncome }: { onAddIncome: () => void }) {
       </Pressable>
     </View>
   );
+}
+
+function formatShortDate(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  if (!y || !m || !d) return iso;
+  const date = new Date(Number(y), Number(m) - 1, Number(d));
+  return format(date, "d 'de' MMMM", { locale: es });
 }
 
 function formatPeriodLabel(period: string): string {

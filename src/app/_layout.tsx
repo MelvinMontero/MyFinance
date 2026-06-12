@@ -4,11 +4,12 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { colorScheme, useColorScheme } from 'nativewind';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { setupNotificationHandler } from '@/features/notifications/scheduler';
+import { notifyBehind, setupNotificationHandler } from '@/features/notifications/scheduler';
+import { useReminders } from '@/features/notifications/useReminders';
 import { useSettings } from '@/features/settings/store';
 import { initDb } from '@/shared/db';
 
@@ -29,6 +30,7 @@ function RootContent() {
   const { colorScheme: cs } = useColorScheme();
   const isDark = cs === 'dark';
   const [error, setError] = useState<string | null>(null);
+  const { reschedule, checkBehind } = useReminders();
 
   // Boot: initDb + load settings + setup notifs.
   useEffect(() => {
@@ -42,6 +44,25 @@ function RootContent() {
       }
     })();
   }, []);
+
+  // Recordatorios: reprogramar al cargar settings y al volver a foreground.
+  useEffect(() => {
+    if (!loaded) return;
+    void reschedule().catch(() => {});
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void (async () => {
+        try {
+          await reschedule();
+          if (await checkBehind()) await notifyBehind();
+        } catch {
+          /* recordatorios no deben tumbar la app */
+        }
+      })();
+    });
+    return () => sub.remove();
+  }, [loaded, reschedule, checkBehind]);
 
   // Aplica el theme al colorScheme de NativeWind cada vez que cambia en el store.
   useEffect(() => {
@@ -129,6 +150,36 @@ function RootContent() {
         options={{
           presentation: 'modal',
           title: 'Editar gasto fijo',
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
+        }}
+      />
+      <Stack.Screen
+        name="goal/new"
+        options={{
+          presentation: 'modal',
+          title: 'Nueva meta',
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
+        }}
+      />
+      <Stack.Screen
+        name="goal/[id]"
+        options={{
+          presentation: 'modal',
+          title: 'Meta',
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
+        }}
+      />
+      <Stack.Screen
+        name="reserve/[occurrenceId]"
+        options={{
+          presentation: 'modal',
+          title: 'Reservar para metas',
           headerStyle: { backgroundColor: headerBg },
           headerTitleStyle: { fontWeight: '700', color: headerText },
           headerTintColor: headerText,

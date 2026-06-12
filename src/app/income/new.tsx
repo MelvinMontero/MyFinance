@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
+import { listGoals } from '@/features/goals/repository';
 import { IncomeForm } from '@/features/incomes/IncomeForm';
 import { createIncome } from '@/features/incomes/repository';
 import type { IncomeFormValues } from '@/features/incomes/schemas';
@@ -24,6 +25,18 @@ export default function NewIncomeScreen() {
         end_date: values.end_date && values.end_date.trim() !== '' ? values.end_date : null,
         note: values.note?.trim() ? values.note.trim() : null,
       });
+
+      // Si hay metas activas en esta moneda, ofrecer reservar de una vez
+      // sobre la ocurrencia más próxima a hoy.
+      const goalsActive = await listGoals({ status: 'active' });
+      const hasGoalsSameCurrency = goalsActive.some((g) => g.currency === values.currency);
+      if (hasGoalsSameCurrency && occurrences.length > 0) {
+        const today = new Date().toISOString().slice(0, 10);
+        const upcoming = occurrences.find((o) => o.occurred_at >= today) ?? occurrences[0]!;
+        router.replace(`/reserve/${upcoming.id}`);
+        return;
+      }
+
       router.back();
       // Aviso al usuario de cuántas ocurrencias se proyectaron
       const count = occurrences.length;
