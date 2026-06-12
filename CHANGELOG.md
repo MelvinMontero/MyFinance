@@ -4,6 +4,50 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-12 — Fase 10/11: Recordatorios + backup de metas
+
+### Added — Recordatorios (notificaciones locales)
+- **Recordatorio de quincena**: notificación el 15 y el último día del mes a las 9am ("¡Llegó tu quincena!"). Se programan las próximas 6 quincenas y se reprograman al abrir la app.
+- **Aviso antes de pagar una meta**: X días antes (3/5/7 configurable) de la fecha límite de cada meta activa.
+- **Alerta de atraso** (foreground): al volver a la app, si hoy es quincena y la ocurrencia de ingreso de hoy sigue sin confirmar, dispara "No olvidés tu quincena".
+- **Meta alcanzada**: notificación inmediata 🎉 cuando un aporte completa una meta.
+- Sección "Recordatorios de quincena y metas" en Ajustes con 3 toggles + selector de días de anticipación. Cada toggle pide permiso de notificaciones la primera vez.
+- Scheduler centralizado: cada familia de notificaciones se cancela **por etiqueta** (`tag` en data) — activar/desactivar gastos fijos ya no borra los recordatorios de metas y viceversa.
+- Lógica pura de triggers en `src/features/notifications/triggers.ts` (testeada sin expo).
+
+### Added — Backup
+- `goals` y `goal_contributions` incluidos en el export/import JSON. Formato de backup **v2**; los respaldos v1 siguen siendo importables.
+
+### Verificaciones
+- `npx tsc --noEmit`: 0 errores.
+- `npm test`: 91/91 (7 suites).
+- `npm run lint`: 0 warnings.
+
+## [0.9.0] - 2026-06-12 — Fase 8/9: Metas de ahorro (sinking funds) + integración a sobres
+
+### Added — Datos y motor (TDD)
+- **Migración v4**: tablas `goals` (objetivo, prima inicial, moneda, fecha límite, `funding_source`, status) y `goal_contributions` (ledger de aportes = historial), índices, y 4 flags de recordatorios en `settings`.
+- **Calendario de quincenas** (`features/goals/paydays.ts`, puro): se cobra el **15 y el último día del mes**. `isPayday`, `nextPaydayOnOrAfter`, `paydaysBetween`, `countPaydaysAfter`.
+- **Motor por meta** (`calculate.ts`, puro): `perPaycheck = ceil((objetivo − prima − aportado) / quincenas restantes)`, con flags `isFunded` / `isOverdue` / `isUrgent`.
+- **Reparto entre metas** (`reservations.ts`, puro): para una quincena y una moneda, cuánto reservar por cada meta activa, agregado por `funding_source` (`off_top` / `from_savings`).
+- **Repositorio**: CRUD de metas + ledger. Un aporte que completa la meta marca `status='completed'` automáticamente. `getPeriodGoalReservations` para el presupuesto.
+- Schemas zod + store Zustand (`useGoals`).
+
+### Added — Integración al modelo de sobres
+- `calculateBuckets` acepta `goalReservationsOffTop` (descuenta del dinero libre) y `goalReservationsFromSavings` (compromete el sobre Ahorro). Nuevos campos: `savingsCommittedToGoals`, `savingsUncommitted`, `isSavingsOvercommitted`. **Compatible hacia atrás** — los 21 tests previos siguen verdes.
+- `getBudgetForPeriod` suma las reservas de metas del período en la moneda activa.
+
+### Added — UI
+- **Tab "Metas"** (icono Target, 7 tabs, label a fontSize 10): lista con progreso y "por quincena", card "A reservar esta quincena", empty state y FAB violeta.
+- **Crear/editar meta** (`goal/new`, `goal/[id]`): nombre, moneda, objetivo, prima inicial, fecha límite (date picker, mínimo hoy), fuente del dinero con textos de ayuda, categoría y nota opcionales.
+- **Detalle de meta**: anillo de progreso (PieChart donut), datos clave, **historial de aportes** (ledger), aporte manual, editar y eliminar (con confirmación; borra el historial por CASCADE).
+- **Desglose al ingresar dinero** (`reserve/[occurrenceId]`): tras crear un ingreso con metas activas en esa moneda, pantalla "Apartá ₡X para cada meta" → **Confirmar** persiste cada reserva en el ledger (idempotente por ocurrencia) → notifica si alguna meta se completó. "Ahora no" cierra sin escribir.
+- **Dashboard**: card violeta "Metas" (respeta el toggle Mensual/Quincenal), tira "Tu próxima quincena: apartá ₡X", warning si las metas from_savings exceden el ahorro del mes.
+
+### Verificaciones
+- `npm test`: 91/91 — paydays (15), goals/calculate (7), reservations (3), buckets (25: 21 previos + 4 nuevos), triggers (3), más los 38 previos.
+- `npx tsc --noEmit`: 0 errores. `npm run lint`: 0 warnings.
+
 ## [0.8.1] - 2026-05-13 — Fase 7 (parte 2): Dark mode en toda la app
 
 ### Added

@@ -139,25 +139,20 @@ npm run test:watch       # Jest watch mode
 2. `npm run start` y escanear el QR.
 3. (Alternativa: emulador en Android Studio.)
 
-## Estado actual — v0.1.0 (Fase 1)
+## Estado actual — v1.0.0 (Fases 1–11 completas)
 
-✅ **Fase 1 completa — Setup + DB.** Ver [CHANGELOG.md](./CHANGELOG.md) para detalle.
+✅ **Fases 1–7**: setup + DB, ingresos (proyección 12 meses), gastos fijos, cálculo de sobres (TDD), gastos variables, reportes mensual/anual, polish (dark mode, biometría, backup JSON, onboarding, notificaciones de gastos fijos). Ver [CHANGELOG.md](./CHANGELOG.md).
 
-- Expo SDK 54 + TS strict + Expo Router 6 + NativeWind 4.
-- SQLite con migrador versionado y 8 tablas del schema final.
-- Seeds idempotentes: 15 categorías + settings (savings_percent=20, CRC).
-- Pantalla Home placeholder con estados loading/ready/error.
-- Money utility cubierta con 19 tests (toCents, fromCents, formatCents, parseAmount).
-- expo-doctor: 17/17 checks OK.
+✅ **Fases 8–9 — Metas de ahorro (sinking funds)** (`features/goals/`): metas con objetivo, prima inicial, moneda, fecha límite y `funding_source`; motor puro por quincena; ledger `goal_contributions` como historial; integración al modelo de sobres; tab Metas + detalle + desglose de reservas al ingresar dinero (migración v4).
+
+✅ **Fases 10–11 — Recordatorios + cierre**: notificaciones de quincena (15 y fin de mes), aviso previo a la fecha de cada meta, alerta de atraso en foreground, notificación de meta alcanzada; metas incluidas en el backup (formato v2).
+
+- DB en migración **v4**. Tests: **91/91**. typecheck/lint: limpios.
 
 ## Fases pendientes
 
-- **Fase 2 — Ingresos**: CRUD + frecuencia (one_time, biweekly, monthly), proyección 12 meses, confirmar ocurrencias.
-- **Fase 3 — Gastos fijos**: CRUD con día de pago + registro de pagos por período.
-- **Fase 4 — Cálculo de sobres** (LA MÁS CRÍTICA — TDD obligatorio): `calculateBuckets(period)` + slider de % ahorro + Dashboard con 3 sobres.
-- **Fase 5 — Gastos variables**: FAB de "+", swipe edit/delete, indicador "te quedan ₡X esta semana".
-- **Fase 6 — Reportes**: Pestaña mensual (donut, barras, top categorías) + Anual (stacked bars, línea de tendencia, KPIs).
-- **Fase 7 — Polish**: Tema claro/oscuro, biometría, backup JSON cifrado con PIN, onboarding, notificaciones.
+- PIN encryption del backup (PBKDF2 + AES via expo-crypto).
+- Multi-idioma vía i18next (la arquitectura ya está lista).
 
 ## Decisiones de diseño importantes
 
@@ -169,6 +164,9 @@ npm run test:watch       # Jest watch mode
 6. **Android-only** — `app.json` no tiene bloque iOS ni web. Si en el futuro se quiere iOS, restaurar el bloque.
 7. **Migraciones inmutables** — una vez publicada, JAMÁS modificar una migración existente. Sumar siempre `version + 1`.
 8. **Seeds idempotentes** — `seedCategories` y `seedSettings` chequean si ya hay datos antes de insertar. Respetan ediciones del usuario.
+9. **Calendario de quincenas: 15 y último día del mes** (`features/goals/paydays.ts`). Toda la lógica de "cuánto apartar por quincena" se apoya en ese módulo puro.
+10. **Metas (sinking funds)** — cada meta tiene `funding_source`: `off_top` (se reserva aparte del salario, descuenta dinero libre) o `from_savings` (compromete el sobre Ahorro). El ledger `goal_contributions` ES el historial: cada reserva confirmada o aporte manual es una fila; el progreso de la meta se deriva de `initial_amount_cents + Σ ledger`. Idempotencia por `income_occurrence_id` para no duplicar reservas de una misma quincena.
+11. **Notificaciones por etiqueta** — cada familia (gastos fijos, quincena, metas) etiqueta sus notificaciones con `data.tag` y cancela SOLO las suyas. No usar `cancelAllScheduledNotificationsAsync` salvo reset total.
 
 ## Estándares de código
 
