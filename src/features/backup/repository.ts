@@ -8,7 +8,9 @@ import { format } from 'date-fns';
 
 import { getDb } from '@/shared/db';
 
-const BACKUP_VERSION = 1;
+// v2: + goals y goal_contributions (Fase 11). Los respaldos v1 siguen siendo importables.
+const BACKUP_VERSION = 2;
+const SUPPORTED_IMPORT_VERSIONS = [1, 2];
 
 interface BackupTable {
   name: string;
@@ -31,6 +33,9 @@ const EXPORT_TABLES = [
   'fixed_expense_payments',
   'variable_expenses',
   'monthly_snapshots',
+  // Orden de inserción respeta FKs: goals antes que goal_contributions.
+  'goals',
+  'goal_contributions',
 ];
 
 /**
@@ -116,10 +121,10 @@ export async function importBackup(): Promise<
   if (parsed.app !== 'myfinance') {
     return { ok: false, reason: 'No es un respaldo de MyFinance.' };
   }
-  if (parsed.version !== BACKUP_VERSION) {
+  if (!SUPPORTED_IMPORT_VERSIONS.includes(parsed.version)) {
     return {
       ok: false,
-      reason: `Versión de respaldo ${parsed.version} no soportada (esperaba ${BACKUP_VERSION}).`,
+      reason: `Versión de respaldo ${parsed.version} no soportada (esperaba ${SUPPORTED_IMPORT_VERSIONS.join(' o ')}).`,
     };
   }
   if (!Array.isArray(parsed.tables)) {

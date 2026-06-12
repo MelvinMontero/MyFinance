@@ -10,10 +10,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  AlarmClockOff,
   Bell,
+  CalendarClock,
   Download,
   Fingerprint,
   Moon,
+  PartyPopper,
   Smartphone,
   Sun,
   Upload,
@@ -21,10 +24,13 @@ import {
 
 import { checkBiometricCapability } from '@/features/auth/biometric';
 import { exportBackup, importBackup } from '@/features/backup/repository';
+import { listGoals } from '@/features/goals/repository';
 import {
-  cancelAllScheduled,
+  cancelFixedExpenseNotifications,
   requestNotificationPermission,
   rescheduleFixedExpenseNotifications,
+  scheduleGoalDueReminders,
+  schedulePaydayReminders,
 } from '@/features/notifications/scheduler';
 import { useSettings } from '@/features/settings/store';
 import type { ThemePreference } from '@/shared/db/types';
@@ -40,12 +46,20 @@ export default function SettingsScreen() {
   const theme = useSettings((s) => s.theme);
   const biometricEnabled = useSettings((s) => s.biometric_enabled);
   const notificationsEnabled = useSettings((s) => s.notifications_enabled);
+  const paydayRemindersEnabled = useSettings((s) => s.payday_reminders_enabled);
+  const goalDueRemindersEnabled = useSettings((s) => s.goal_due_reminders_enabled);
+  const behindRemindersEnabled = useSettings((s) => s.behind_reminders_enabled);
+  const goalDueLeadDays = useSettings((s) => s.goal_due_lead_days);
 
   const setSavingsPercent = useSettings((s) => s.setSavingsPercent);
   const setCurrency = useSettings((s) => s.setCurrency);
   const setTheme = useSettings((s) => s.setTheme);
   const setBiometricEnabled = useSettings((s) => s.setBiometricEnabled);
   const setNotificationsEnabled = useSettings((s) => s.setNotificationsEnabled);
+  const setPaydayReminders = useSettings((s) => s.setPaydayReminders);
+  const setGoalDueReminders = useSettings((s) => s.setGoalDueReminders);
+  const setBehindReminders = useSettings((s) => s.setBehindReminders);
+  const setGoalDueLeadDays = useSettings((s) => s.setGoalDueLeadDays);
   const loadSettings = useSettings((s) => s.load);
 
   const [draftPct, setDraftPct] = useState(savingsPercent);
@@ -134,9 +148,101 @@ export default function SettingsScreen() {
             : `Programé ${count} ${count === 1 ? 'recordatorio' : 'recordatorios'}.`,
         );
       } else {
-        await cancelAllScheduled();
+        await cancelFixedExpenseNotifications();
         await setNotificationsEnabled(false);
       }
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handlePaydayRemindersToggle(enabled: boolean) {
+    if (busy) return;
+    setBusy('notif');
+    try {
+      if (enabled) {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          Alert.alert(
+            'Permiso denegado',
+            'Otorgá permiso de notificaciones en los ajustes del sistema y volvé a intentarlo.',
+          );
+          return;
+        }
+      }
+      await setPaydayReminders(enabled);
+      await schedulePaydayReminders(enabled);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function rescheduleGoalDue(enabled: boolean, leadDays: number) {
+    const goals = await listGoals({ status: 'active' });
+    await scheduleGoalDueReminders(
+      enabled,
+      goals.map((g) => ({ name: g.name, due_date: g.due_date, status: g.status })),
+      leadDays,
+    );
+  }
+
+  async function handleGoalDueRemindersToggle(enabled: boolean) {
+    if (busy) return;
+    setBusy('notif');
+    try {
+      if (enabled) {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          Alert.alert(
+            'Permiso denegado',
+            'Otorgá permiso de notificaciones en los ajustes del sistema y volvé a intentarlo.',
+          );
+          return;
+        }
+      }
+      await setGoalDueReminders(enabled);
+      await rescheduleGoalDue(enabled, goalDueLeadDays);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleLeadDaysChange(days: number) {
+    if (busy || days === goalDueLeadDays) return;
+    setBusy('notif');
+    try {
+      await setGoalDueLeadDays(days);
+      if (goalDueRemindersEnabled) {
+        await rescheduleGoalDue(true, days);
+      }
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleBehindRemindersToggle(enabled: boolean) {
+    if (busy) return;
+    setBusy('notif');
+    try {
+      if (enabled) {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          Alert.alert(
+            'Permiso denegado',
+            'Otorgá permiso de notificaciones en los ajustes del sistema y volvé a intentarlo.',
+          );
+          return;
+        }
+      }
+      await setBehindReminders(enabled);
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : String(e));
     } finally {
@@ -352,6 +458,73 @@ export default function SettingsScreen() {
             onValueChange={handleNotificationsToggle}
             disabled={busy !== null}
           />
+        </Section>
+
+        {/* RECORDATORIOS DE QUINCENA Y METAS */}
+        <Section title="Recordatorios de quincena y metas">
+          <ToggleRow
+            icon={CalendarClock}
+            iconColor="#7c3aed"
+            label="Recordatorio de quincena"
+            description="El 15 y el último día del mes, a las 9am."
+            value={paydayRemindersEnabled}
+            onValueChange={handlePaydayRemindersToggle}
+            disabled={busy !== null}
+          />
+          <View className="mt-4">
+            <ToggleRow
+              icon={PartyPopper}
+              iconColor="#7c3aed"
+              label="Aviso antes de pagar una meta"
+              description="Para que llegués a la fecha con lo reservado."
+              value={goalDueRemindersEnabled}
+              onValueChange={handleGoalDueRemindersToggle}
+              disabled={busy !== null}
+            />
+          </View>
+          {goalDueRemindersEnabled && (
+            <View className="mt-3 flex-row items-center gap-2 pl-14">
+              <Text className="text-sm text-gray-500 dark:text-gray-400">Avisar</Text>
+              {[3, 5, 7].map((days) => {
+                const selected = goalDueLeadDays === days;
+                return (
+                  <Pressable
+                    key={days}
+                    onPress={() => handleLeadDaysChange(days)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    className={
+                      selected
+                        ? 'rounded-xl border-2 border-violet-600 bg-violet-50 dark:bg-violet-950 px-3 py-1.5'
+                        : 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5'
+                    }
+                  >
+                    <Text
+                      className={
+                        selected
+                          ? 'text-sm font-bold text-violet-800 dark:text-violet-200'
+                          : 'text-sm font-semibold text-gray-700 dark:text-gray-300'
+                      }
+                    >
+                      {days} días
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              <Text className="text-sm text-gray-500 dark:text-gray-400">antes</Text>
+            </View>
+          )}
+          <View className="mt-4">
+            <ToggleRow
+              icon={AlarmClockOff}
+              iconColor="#d97706"
+              label="Avisarme si no registré la quincena"
+              description="Si es día de pago y el ingreso sigue sin confirmar."
+              value={behindRemindersEnabled}
+              onValueChange={handleBehindRemindersToggle}
+              disabled={busy !== null}
+            />
+          </View>
         </Section>
 
         {/* RESPALDO */}
