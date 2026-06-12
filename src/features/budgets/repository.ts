@@ -1,3 +1,4 @@
+import { getPeriodGoalReservations } from '@/features/goals/repository';
 import { getDb } from '@/shared/db';
 
 import { calculateBuckets, type BucketBreakdown } from './calculate';
@@ -72,11 +73,17 @@ export async function getBudgetForPeriod(
     currency,
   );
 
+  // RESERVAS DE METAS: lo que falta apartar este período para las metas activas.
+  const asOf = new Date().toISOString().slice(0, 10);
+  const reservations = await getPeriodGoalReservations(period, currency, asOf);
+
   const breakdown = calculateBuckets({
     incomeAmount: incomeRow?.total ?? 0,
     savingsPercent,
     fixedExpensesAmount: fixedRow?.total ?? 0,
     variableExpensesAmount: variableRow?.total ?? 0,
+    goalReservationsOffTop: reservations.offTop,
+    goalReservationsFromSavings: reservations.fromSavings,
   });
 
   return {

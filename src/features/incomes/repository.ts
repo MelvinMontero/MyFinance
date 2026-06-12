@@ -192,6 +192,15 @@ export async function listOccurrences(
   );
 }
 
+export async function getOccurrence(id: string): Promise<IncomeOccurrence | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<IncomeOccurrence>(
+    'SELECT * FROM income_occurrences WHERE id = ?',
+    id,
+  );
+  return row ?? null;
+}
+
 export async function setOccurrenceConfirmed(
   id: string,
   confirmed: boolean,

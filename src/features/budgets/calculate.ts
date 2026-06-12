@@ -23,6 +23,10 @@ export interface CalculateBucketsInput {
   fixedExpensesAmount: number;
   /** Total ya gastado en gastos variables del período, centavos enteros ≥ 0. */
   variableExpensesAmount: number;
+  /** Reservas de metas "aparte" (off_top) del período. Descuentan dinero libre. Default 0. */
+  goalReservationsOffTop?: number;
+  /** Reservas de metas que salen del sobre Ahorro. No cambian dinero libre. Default 0. */
+  goalReservationsFromSavings?: number;
 }
 
 export interface BucketBreakdown {
@@ -42,19 +46,37 @@ export interface BucketBreakdown {
   isOverBudget: boolean;
   /** True cuando los gastos variables superan el dinero libre (remaining < 0). */
   isOverspent: boolean;
+  goalReservationsOffTop: number;
+  goalReservationsFromSavings: number;
+  /** Parte del ahorro ya comprometida en metas from_savings. */
+  savingsCommittedToGoals: number;
+  /** Ahorro disponible = savings − savingsCommittedToGoals (puede ser negativo). */
+  savingsUncommitted: number;
+  /** True cuando las metas from_savings exceden el sobre Ahorro. */
+  isSavingsOvercommitted: boolean;
 }
 
 export function calculateBuckets(input: CalculateBucketsInput): BucketBreakdown {
-  const { incomeAmount, savingsPercent, fixedExpensesAmount, variableExpensesAmount } = input;
+  const {
+    incomeAmount,
+    savingsPercent,
+    fixedExpensesAmount,
+    variableExpensesAmount,
+    goalReservationsOffTop = 0,
+    goalReservationsFromSavings = 0,
+  } = input;
 
   assertNonNegativeFinite(incomeAmount, 'incomeAmount');
   assertNonNegativeFinite(fixedExpensesAmount, 'fixedExpensesAmount');
   assertNonNegativeFinite(variableExpensesAmount, 'variableExpensesAmount');
+  assertNonNegativeFinite(goalReservationsOffTop, 'goalReservationsOffTop');
+  assertNonNegativeFinite(goalReservationsFromSavings, 'goalReservationsFromSavings');
   assertPercentInRange(savingsPercent);
 
   const savings = Math.round((incomeAmount * savingsPercent) / 100);
-  const freeMoney = incomeAmount - savings - fixedExpensesAmount;
+  const freeMoney = incomeAmount - savings - fixedExpensesAmount - goalReservationsOffTop;
   const freeMoneyRemaining = freeMoney - variableExpensesAmount;
+  const savingsUncommitted = savings - goalReservationsFromSavings;
 
   return {
     income: incomeAmount,
@@ -63,8 +85,13 @@ export function calculateBuckets(input: CalculateBucketsInput): BucketBreakdown 
     freeMoney,
     variableExpensesSpent: variableExpensesAmount,
     freeMoneyRemaining,
+    goalReservationsOffTop,
+    goalReservationsFromSavings,
+    savingsCommittedToGoals: goalReservationsFromSavings,
+    savingsUncommitted,
     isOverBudget: freeMoney < 0,
     isOverspent: freeMoneyRemaining < 0,
+    isSavingsOvercommitted: goalReservationsFromSavings > savings,
   };
 }
 

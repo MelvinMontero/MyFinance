@@ -224,3 +224,61 @@ describe('calculateBuckets — el escenario de la docu', () => {
     expect(r.isOverBudget).toBe(false);
   });
 });
+
+describe('calculateBuckets — reservas de metas', () => {
+  it('reservas off_top reducen el dinero libre sin tocar el ahorro', () => {
+    const b = calculateBuckets({
+      incomeAmount: 10_000_000,
+      savingsPercent: 20,
+      fixedExpensesAmount: 3_000_000,
+      variableExpensesAmount: 0,
+      goalReservationsOffTop: 1_500_000,
+      goalReservationsFromSavings: 0,
+    });
+    expect(b.savings).toBe(2_000_000);
+    // free = 10M − 2M − 3M − 1.5M = 3.5M
+    expect(b.freeMoney).toBe(3_500_000);
+    expect(b.goalReservationsOffTop).toBe(1_500_000);
+    expect(b.savingsUncommitted).toBe(2_000_000);
+  });
+
+  it('reservas from_savings comprometen parte del ahorro, no cambian el dinero libre', () => {
+    const b = calculateBuckets({
+      incomeAmount: 10_000_000,
+      savingsPercent: 20,
+      fixedExpensesAmount: 3_000_000,
+      variableExpensesAmount: 0,
+      goalReservationsOffTop: 0,
+      goalReservationsFromSavings: 1_200_000,
+    });
+    expect(b.freeMoney).toBe(5_000_000); // 10M − 2M − 3M
+    expect(b.savingsCommittedToGoals).toBe(1_200_000);
+    expect(b.savingsUncommitted).toBe(800_000);
+    expect(b.isSavingsOvercommitted).toBe(false);
+  });
+
+  it('marca isSavingsOvercommitted cuando las metas from_savings superan el ahorro', () => {
+    const b = calculateBuckets({
+      incomeAmount: 10_000_000,
+      savingsPercent: 10,
+      fixedExpensesAmount: 0,
+      variableExpensesAmount: 0,
+      goalReservationsFromSavings: 1_500_000, // ahorro es 1M → overcommit
+    });
+    expect(b.savingsCommittedToGoals).toBe(1_500_000);
+    expect(b.savingsUncommitted).toBe(-500_000);
+    expect(b.isSavingsOvercommitted).toBe(true);
+  });
+
+  it('sin reservas (defaults) el resultado es idéntico al comportamiento previo', () => {
+    const b = calculateBuckets({
+      incomeAmount: 10_000_000,
+      savingsPercent: 20,
+      fixedExpensesAmount: 3_000_000,
+      variableExpensesAmount: 1_000_000,
+    });
+    expect(b.freeMoney).toBe(5_000_000);
+    expect(b.goalReservationsOffTop).toBe(0);
+    expect(b.goalReservationsFromSavings).toBe(0);
+  });
+});
