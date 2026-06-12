@@ -10,6 +10,10 @@ export interface SettingsState {
   biometric_enabled: boolean;
   notifications_enabled: boolean;
   onboarding_completed: boolean;
+  payday_reminders_enabled: boolean;
+  goal_due_reminders_enabled: boolean;
+  behind_reminders_enabled: boolean;
+  goal_due_lead_days: number;
   loaded: boolean;
 
   /** Carga inicial desde DB. Idempotente. */
@@ -20,6 +24,10 @@ export interface SettingsState {
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
   setNotificationsEnabled: (enabled: boolean) => Promise<void>;
   setOnboardingCompleted: (completed: boolean) => Promise<void>;
+  setPaydayReminders: (enabled: boolean) => Promise<void>;
+  setGoalDueReminders: (enabled: boolean) => Promise<void>;
+  setBehindReminders: (enabled: boolean) => Promise<void>;
+  setGoalDueLeadDays: (days: number) => Promise<void>;
 }
 
 /**
@@ -33,6 +41,10 @@ export const useSettings = create<SettingsState>((set) => ({
   biometric_enabled: false,
   notifications_enabled: false,
   onboarding_completed: false,
+  payday_reminders_enabled: false,
+  goal_due_reminders_enabled: false,
+  behind_reminders_enabled: false,
+  goal_due_lead_days: 5,
   loaded: false,
 
   load: async () => {
@@ -45,6 +57,10 @@ export const useSettings = create<SettingsState>((set) => ({
         biometric_enabled: row.biometric_enabled === 1,
         notifications_enabled: row.notifications_enabled === 1,
         onboarding_completed: row.onboarding_completed === 1,
+        payday_reminders_enabled: row.payday_reminders_enabled === 1,
+        goal_due_reminders_enabled: row.goal_due_reminders_enabled === 1,
+        behind_reminders_enabled: row.behind_reminders_enabled === 1,
+        goal_due_lead_days: row.goal_due_lead_days,
         loaded: true,
       });
     } else {
@@ -81,5 +97,25 @@ export const useSettings = create<SettingsState>((set) => ({
   setOnboardingCompleted: async (completed) => {
     await updateSettings({ onboarding_completed: completed });
     set({ onboarding_completed: completed });
+  },
+
+  setPaydayReminders: async (enabled) => {
+    await updateSettings({ payday_reminders_enabled: enabled });
+    set({ payday_reminders_enabled: enabled });
+  },
+
+  setGoalDueReminders: async (enabled) => {
+    await updateSettings({ goal_due_reminders_enabled: enabled });
+    set({ goal_due_reminders_enabled: enabled });
+  },
+
+  setBehindReminders: async (enabled) => {
+    await updateSettings({ behind_reminders_enabled: enabled });
+    set({ behind_reminders_enabled: enabled });
+  },
+
+  setGoalDueLeadDays: async (days) => {
+    await updateSettings({ goal_due_lead_days: days });
+    set({ goal_due_lead_days: days });
   },
 }));

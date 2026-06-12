@@ -50,6 +50,10 @@ export interface UpdateSettingsInput {
   biometric_enabled?: boolean;
   notifications_enabled?: boolean;
   onboarding_completed?: boolean;
+  payday_reminders_enabled?: boolean;
+  goal_due_reminders_enabled?: boolean;
+  behind_reminders_enabled?: boolean;
+  goal_due_lead_days?: number;
 }
 
 /**
@@ -83,6 +87,22 @@ export async function updateSettings(patch: UpdateSettingsInput): Promise<void> 
   if (patch.onboarding_completed !== undefined) {
     sets.push('onboarding_completed = ?');
     args.push(patch.onboarding_completed ? 1 : 0);
+  }
+  if (patch.payday_reminders_enabled !== undefined) {
+    sets.push('payday_reminders_enabled = ?');
+    args.push(patch.payday_reminders_enabled ? 1 : 0);
+  }
+  if (patch.goal_due_reminders_enabled !== undefined) {
+    sets.push('goal_due_reminders_enabled = ?');
+    args.push(patch.goal_due_reminders_enabled ? 1 : 0);
+  }
+  if (patch.behind_reminders_enabled !== undefined) {
+    sets.push('behind_reminders_enabled = ?');
+    args.push(patch.behind_reminders_enabled ? 1 : 0);
+  }
+  if (patch.goal_due_lead_days !== undefined) {
+    sets.push('goal_due_lead_days = ?');
+    args.push(patch.goal_due_lead_days);
   }
   if (sets.length === 0) return;
 

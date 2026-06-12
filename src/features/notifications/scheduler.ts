@@ -4,6 +4,10 @@ import * as Notifications from 'expo-notifications';
 import { listFixedExpenses } from '@/features/fixed-expenses/repository';
 import { formatCents } from '@/shared/utils/money';
 
+import { goalDueTrigger, nextPaydayTriggers } from './triggers';
+
+export { goalDueTrigger, nextPaydayTriggers } from './triggers';
+
 /**
  * Días de aviso antes del vencimiento. Se programan 2 notificaciones por
  * cada gasto fijo activo: una 3 días antes a las 9am, otra el día mismo a las 9am.
@@ -50,6 +54,27 @@ export async function cancelAllScheduled(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
+/** Etiquetas para cancelar cada familia de notificaciones sin tocar las demás. */
+const FIXED_TAG = 'fixed-expense';
+const PAYDAY_TAG = 'payday';
+const GOAL_DUE_TAG = 'goal-due';
+const ACHIEVE_TAG = 'goal-achieved';
+const BEHIND_TAG = 'behind';
+
+async function cancelByTag(tag: string): Promise<void> {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((n) => (n.content.data as { tag?: string } | undefined)?.tag === tag)
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+  );
+}
+
+/** Cancela solo las notificaciones de gastos fijos (deja recordatorios intactos). */
+export async function cancelFixedExpenseNotifications(): Promise<void> {
+  await cancelByTag(FIXED_TAG);
+}
+
 /**
  * Programa notificaciones para los gastos fijos activos en la moneda dada.
  * Primero cancela todo lo que había, después programa fresco.
@@ -60,7 +85,7 @@ export async function cancelAllScheduled(): Promise<void> {
  */
 export async function rescheduleFixedExpenseNotifications(currency: string): Promise<number> {
   await ensureChannel();
-  await cancelAllScheduled();
+  await cancelByTag(FIXED_TAG);
 
   const expenses = await listFixedExpenses({ active: true });
   const inCurrency = expenses.filter((e) => e.currency === currency);
@@ -92,7 +117,7 @@ export async function rescheduleFixedExpenseNotifications(currency: string): Pro
         content: {
           title,
           body,
-          data: { fixed_expense_id: exp.id },
+          data: { tag: FIXED_TAG, fixed_expense_id: exp.id },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -130,4 +155,91 @@ function nextDueDate(from: Date, dueDay: number): Date {
 
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+// ---------- Recordatorios de quincena y metas (Fase 10) ----------
+
+const REMINDERS_CHANNEL_ID = 'reminders';
+
+async function ensureRemindersChannel(): Promise<void> {
+  await Notifications.setNotificationChannelAsync(REMINDERS_CHANNEL_ID, {
+    name: 'Recordatorios',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    enableVibrate: true,
+  });
+}
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+/** Reprograma los recordatorios de quincena (15 y fin de mes, 9am). */
+export async function schedulePaydayReminders(enabled: boolean): Promise<void> {
+  await cancelByTag(PAYDAY_TAG);
+  if (!enabled) return;
+  await ensureRemindersChannel();
+  for (const iso of nextPaydayTriggers(today(), 6, 9)) {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '¡Llegó tu quincena! 💰',
+        body: 'Registrá tu ingreso y revisá cuánto apartar para tus metas.',
+        data: { tag: PAYDAY_TAG },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(iso),
+        channelId: REMINDERS_CHANNEL_ID,
+      },
+    });
+  }
+}
+
+/** Reprograma los avisos previos a la fecha de cada meta activa. */
+export async function scheduleGoalDueReminders(
+  enabled: boolean,
+  goals: { name: string; due_date: string; status: string }[],
+  leadDays: number,
+): Promise<void> {
+  await cancelByTag(GOAL_DUE_TAG);
+  if (!enabled) return;
+  await ensureRemindersChannel();
+  for (const g of goals) {
+    if (g.status !== 'active') continue;
+    const iso = goalDueTrigger(g.due_date, leadDays, 9, today());
+    if (!iso) continue;
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `Se acerca el pago de "${g.name}"`,
+        body: `Faltan ${leadDays} días. Revisá que tengas lo reservado.`,
+        data: { tag: GOAL_DUE_TAG },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(iso),
+        channelId: REMINDERS_CHANNEL_ID,
+      },
+    });
+  }
+}
+
+/** Notificación inmediata de logro (tras un aporte que fondea la meta). */
+export async function notifyGoalAchieved(goalName: string): Promise<void> {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '🎉 ¡Meta alcanzada!',
+      body: `Completaste "${goalName}". ¡Bien ahí!`,
+      data: { tag: ACHIEVE_TAG },
+    },
+    trigger: null,
+  });
+}
+
+/** Notificación inmediata de atraso (la dispara el chequeo de foreground). */
+export async function notifyBehind(): Promise<void> {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'No olvidés tu quincena',
+      body: 'Hoy es día de pago y todavía no registraste tu ingreso.',
+      data: { tag: BEHIND_TAG },
+    },
+    trigger: null,
+  });
 }
