@@ -121,4 +121,42 @@ export const migrations: Migration[] = [
       ALTER TABLE settings ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 0;
     `,
   },
+  {
+    version: 4,
+    description: 'metas de ahorro (goals con priority + goal_contributions)',
+    sql: `
+      CREATE TABLE IF NOT EXISTS goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_cents INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'CRC',
+        start_date TEXT NOT NULL,
+        deadline TEXT NOT NULL,
+        priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('high','medium','low')),
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS goal_contributions (
+        id TEXT PRIMARY KEY,
+        goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+        amount_cents INTEGER NOT NULL,
+        contributed_at TEXT NOT NULL,
+        quincena_key TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_goal_contributions_goal ON goal_contributions(goal_id);
+      CREATE INDEX IF NOT EXISTS idx_goal_contributions_quincena ON goal_contributions(quincena_key);
+    `,
+  },
+  {
+    version: 5,
+    description: 'colchón financiero (payday_offset_days) y notificaciones configurables',
+    sql: `
+      ALTER TABLE settings ADD COLUMN payday_offset_days INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE settings ADD COLUMN notify_days_before INTEGER NOT NULL DEFAULT 2;
+    `,
+  },
 ];

@@ -50,6 +50,8 @@ export interface UpdateSettingsInput {
   biometric_enabled?: boolean;
   notifications_enabled?: boolean;
   onboarding_completed?: boolean;
+  payday_offset_days?: number;
+  notify_days_before?: number;
 }
 
 /**
@@ -83,6 +85,14 @@ export async function updateSettings(patch: UpdateSettingsInput): Promise<void> 
   if (patch.onboarding_completed !== undefined) {
     sets.push('onboarding_completed = ?');
     args.push(patch.onboarding_completed ? 1 : 0);
+  }
+  if (patch.payday_offset_days !== undefined) {
+    sets.push('payday_offset_days = ?');
+    args.push(patch.payday_offset_days);
+  }
+  if (patch.notify_days_before !== undefined) {
+    sets.push('notify_days_before = ?');
+    args.push(patch.notify_days_before);
   }
   if (sets.length === 0) return;
 

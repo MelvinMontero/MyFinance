@@ -4,6 +4,7 @@
 export type CategoryType = 'income' | 'fixed_expense' | 'variable_expense';
 export type IncomeFrequency = 'one_time' | 'biweekly' | 'monthly';
 export type ThemePreference = 'system' | 'light' | 'dark';
+export type GoalPriority = 'high' | 'medium' | 'low';
 export type SqliteBoolean = 0 | 1;
 
 export interface Settings {
@@ -14,6 +15,8 @@ export interface Settings {
   biometric_enabled: SqliteBoolean;
   notifications_enabled: SqliteBoolean;
   onboarding_completed: SqliteBoolean;
+  payday_offset_days: number; // colchón financiero — migración v5
+  notify_days_before: number; // días de anticipación de avisos — migración v5
   created_at: string;
   updated_at: string;
 }
@@ -93,4 +96,26 @@ export interface MonthlySnapshot {
   savings_target_cents: number;
   free_money_cents: number;
   updated_at: string;
+}
+
+export interface Goal {
+  id: string;
+  name: string;
+  target_cents: number;
+  currency: string; // ISO 4217
+  start_date: string; // 'yyyy-MM-dd' inicio del ahorro
+  deadline: string; // 'yyyy-MM-dd' fecha límite
+  priority: GoalPriority;
+  is_active: SqliteBoolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  amount_cents: number;
+  contributed_at: string; // 'yyyy-MM-dd'
+  quincena_key: string; // 'yyyy-MM-H' (H = 1 | 2)
+  created_at: string;
 }

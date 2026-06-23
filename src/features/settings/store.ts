@@ -10,6 +10,8 @@ export interface SettingsState {
   biometric_enabled: boolean;
   notifications_enabled: boolean;
   onboarding_completed: boolean;
+  payday_offset_days: number;
+  notify_days_before: number;
   loaded: boolean;
 
   /** Carga inicial desde DB. Idempotente. */
@@ -20,6 +22,8 @@ export interface SettingsState {
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
   setNotificationsEnabled: (enabled: boolean) => Promise<void>;
   setOnboardingCompleted: (completed: boolean) => Promise<void>;
+  setPaydayOffsetDays: (days: number) => Promise<void>;
+  setNotifyDaysBefore: (days: number) => Promise<void>;
 }
 
 /**
@@ -33,6 +37,8 @@ export const useSettings = create<SettingsState>((set) => ({
   biometric_enabled: false,
   notifications_enabled: false,
   onboarding_completed: false,
+  payday_offset_days: 0,
+  notify_days_before: 2,
   loaded: false,
 
   load: async () => {
@@ -45,6 +51,8 @@ export const useSettings = create<SettingsState>((set) => ({
         biometric_enabled: row.biometric_enabled === 1,
         notifications_enabled: row.notifications_enabled === 1,
         onboarding_completed: row.onboarding_completed === 1,
+        payday_offset_days: row.payday_offset_days,
+        notify_days_before: row.notify_days_before,
         loaded: true,
       });
     } else {
@@ -81,5 +89,17 @@ export const useSettings = create<SettingsState>((set) => ({
   setOnboardingCompleted: async (completed) => {
     await updateSettings({ onboarding_completed: completed });
     set({ onboarding_completed: completed });
+  },
+
+  setPaydayOffsetDays: async (days) => {
+    const clamped = Math.max(0, Math.min(15, Math.round(days)));
+    await updateSettings({ payday_offset_days: clamped });
+    set({ payday_offset_days: clamped });
+  },
+
+  setNotifyDaysBefore: async (days) => {
+    const clamped = Math.max(0, Math.min(14, Math.round(days)));
+    await updateSettings({ notify_days_before: clamped });
+    set({ notify_days_before: clamped });
   },
 }));
