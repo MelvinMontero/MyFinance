@@ -20,7 +20,7 @@ const PRIORITY_TONE: Record<GoalPriority, { label: string; chip: string; text: s
 export function GoalCard({ goal, onPress }: { goal: GoalWithPlan; onPress: () => void }) {
   const tone = PRIORITY_TONE[goal.priority];
   const pct = Math.round(goal.plan.progress * 100);
-  const cuota = goal.plan.perQuincenaCents;
+  const cuota = goal.quincena_quota_cents;
 
   const statusLine = goal.plan.isComplete
     ? '¡Meta completada! 🎉'

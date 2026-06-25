@@ -16,16 +16,13 @@ import { GoalForm } from '@/features/goals/GoalForm';
 import {
   addContribution,
   deleteGoal,
-  getGoal,
-  getGoalSaved,
+  getGoalWithPlan,
   updateGoal,
   type GoalWithPlan,
 } from '@/features/goals/repository';
-import { calculateGoalPlan } from '@/features/goals/calc';
 import type { GoalFormValues } from '@/features/goals/schemas';
 import { isSupportedCurrency } from '@/shared/utils/currency';
 import { fromCents, formatCents } from '@/shared/utils/money';
-import { parseISO } from 'date-fns';
 
 type Status = 'loading' | 'ready' | 'error' | 'notfound';
 
@@ -38,19 +35,12 @@ export default function GoalDetailScreen() {
 
   const reload = useCallback(async () => {
     if (!id) return;
-    const row = await getGoal(id);
-    if (!row) {
+    const g = await getGoalWithPlan(id, new Date());
+    if (!g) {
       setStatus('notfound');
       return;
     }
-    const saved = await getGoalSaved(id);
-    const plan = calculateGoalPlan({
-      targetCents: row.target_cents,
-      savedCents: saved,
-      from: new Date(),
-      deadline: parseISO(row.deadline),
-    });
-    setGoal({ ...row, saved_cents: saved, plan });
+    setGoal(g);
     setStatus('ready');
   }, [id]);
 
@@ -91,8 +81,8 @@ export default function GoalDetailScreen() {
   }
 
   function confirmContribute() {
-    if (!goal || goal.plan.perQuincenaCents <= 0) return;
-    const amount = goal.plan.perQuincenaCents;
+    if (!goal || goal.quincena_quota_cents <= 0) return;
+    const amount = goal.quincena_quota_cents;
     Alert.alert(
       'Apartar cuota',
       `¿Registrar un aporte de ${formatCents(amount, { currency: goal.currency })} a "${goal.name}"?`,
@@ -183,14 +173,14 @@ export default function GoalDetailScreen() {
           </View>
           {!goal.plan.isComplete && (
             <Text className="mt-3 text-sm font-medium text-emerald-800 dark:text-emerald-200">
-              Cuota sugerida: {formatCents(goal.plan.perQuincenaCents, { currency: goal.currency })} por quincena ·
+              Cuota sugerida: {formatCents(goal.quincena_quota_cents, { currency: goal.currency })} por quincena ·
               faltan {goal.plan.remainingQuincenas}
             </Text>
           )}
         </View>
 
         {/* APARTAR CUOTA */}
-        {!goal.plan.isComplete && goal.plan.perQuincenaCents > 0 && (
+        {!goal.plan.isComplete && goal.quincena_quota_cents > 0 && (
           <Pressable
             onPress={confirmContribute}
             accessibilityRole="button"
@@ -198,7 +188,7 @@ export default function GoalDetailScreen() {
           >
             <PiggyBank size={20} color="#fff" strokeWidth={2} />
             <Text className="text-base font-bold text-white">
-              Apartar {formatCents(goal.plan.perQuincenaCents, { currency: goal.currency })} esta quincena
+              Apartar {formatCents(goal.quincena_quota_cents, { currency: goal.currency })} esta quincena
             </Text>
           </Pressable>
         )}

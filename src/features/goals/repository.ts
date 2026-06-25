@@ -29,6 +29,13 @@ export interface UpdateGoalInput {
 /** Meta + total ahorrado + plan calculado a una fecha dada. */
 export interface GoalWithPlan extends Goal {
   saved_cents: number;
+  /** Aportado en la quincena en curso (quincena_key actual). */
+  contributed_this_quincena: number;
+  /**
+   * Cuota a apartar ESTA quincena, calculada SIN contar lo ya aportado en ella.
+   * Así, marcar/desmarcar el aporte no mueve la cuota ni el dinero libre.
+   */
+  quincena_quota_cents: number;
   plan: GoalPlan;
 }
 
@@ -155,6 +162,30 @@ export async function getGoalSaved(goalId: string): Promise<number> {
   return row?.saved ?? 0;
 }
 
+/** Total aportado por meta en una quincena (quincena_key), como mapa. */
+async function getThisQuincenaMap(quincenaKeyValue: string): Promise<Map<string, number>> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ goal_id: string; saved: number }>(
+    `SELECT goal_id, COALESCE(SUM(amount_cents), 0) AS saved
+       FROM goal_contributions WHERE quincena_key = ? GROUP BY goal_id`,
+    quincenaKeyValue,
+  );
+  return new Map(rows.map((r) => [r.goal_id, r.saved]));
+}
+
+/** Borra los aportes de una meta en una quincena (para desmarcar). */
+export async function removeQuincenaContributions(
+  goalId: string,
+  quincenaKeyValue: string,
+): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'DELETE FROM goal_contributions WHERE goal_id = ? AND quincena_key = ?',
+    goalId,
+    quincenaKeyValue,
+  );
+}
+
 /**
  * Registra un aporte a una meta. La fecha define la quincena (quincena_key).
  */
@@ -196,20 +227,68 @@ export async function listContributions(goalId: string): Promise<GoalContributio
 
 /* ===== PLANES ===== */
 
-/** Metas activas con su total ahorrado y plan calculado a `from`. */
+/** Metas activas con su total ahorrado, lo aportado esta quincena y plan. */
 export async function listGoalsWithPlan(from: Date = new Date()): Promise<GoalWithPlan[]> {
   const goals = await listGoals({ active: true });
   const savedMap = await getSavedMap();
+  const thisQMap = await getThisQuincenaMap(quincenaKey(getQuincena(from)));
   return goals.map((g) => {
     const saved_cents = savedMap.get(g.id) ?? 0;
+    const contributed_this_quincena = thisQMap.get(g.id) ?? 0;
+    // plan (progreso, completada, vencida) con el total ahorrado real
     const plan = calculateGoalPlan({
       targetCents: g.target_cents,
       savedCents: saved_cents,
       from,
       deadline: parseISO(g.deadline),
     });
-    return { ...g, saved_cents, plan };
+    // cuota estable: calculada SIN lo aportado en esta quincena
+    const effectiveSaved = Math.max(0, saved_cents - contributed_this_quincena);
+    const stable = calculateGoalPlan({
+      targetCents: g.target_cents,
+      savedCents: effectiveSaved,
+      from,
+      deadline: parseISO(g.deadline),
+    });
+    return {
+      ...g,
+      saved_cents,
+      contributed_this_quincena,
+      quincena_quota_cents: stable.perQuincenaCents,
+      plan,
+    };
   });
+}
+
+/** Una meta con su plan, total ahorrado y aporte de la quincena (para el detalle). */
+export async function getGoalWithPlan(
+  id: string,
+  from: Date = new Date(),
+): Promise<GoalWithPlan | null> {
+  const g = await getGoal(id);
+  if (!g) return null;
+  const saved_cents = await getGoalSaved(id);
+  const contributed_this_quincena = (await getThisQuincenaMap(quincenaKey(getQuincena(from)))).get(id) ?? 0;
+  const plan = calculateGoalPlan({
+    targetCents: g.target_cents,
+    savedCents: saved_cents,
+    from,
+    deadline: parseISO(g.deadline),
+  });
+  const effectiveSaved = Math.max(0, saved_cents - contributed_this_quincena);
+  const stable = calculateGoalPlan({
+    targetCents: g.target_cents,
+    savedCents: effectiveSaved,
+    from,
+    deadline: parseISO(g.deadline),
+  });
+  return {
+    ...g,
+    saved_cents,
+    contributed_this_quincena,
+    quincena_quota_cents: stable.perQuincenaCents,
+    plan,
+  };
 }
 
 /**

@@ -60,7 +60,7 @@ export function BreakdownModal({ visible, onClose, quincena, goals, currency, ra
 
             {goals.length > 0 && <SectionLabel text="Metas" />}
             {goals.map((g) => {
-              const converted = convertCents(g.plan.perQuincenaCents, g.currency, currency, rate);
+              const converted = convertCents(g.quincena_quota_cents, g.currency, currency, rate);
               const isOther = g.currency !== currency;
               return (
                 <Row
@@ -69,7 +69,7 @@ export function BreakdownModal({ visible, onClose, quincena, goals, currency, ra
                   amount={formatCents(converted, { currency })}
                   hint={
                     isOther
-                      ? `≈ de ${formatCents(g.plan.perQuincenaCents, { currency: g.currency })} (cambio ₡${rate}/$)`
+                      ? `≈ de ${formatCents(g.quincena_quota_cents, { currency: g.currency })} (cambio ₡${rate}/$)`
                       : undefined
                   }
                 />

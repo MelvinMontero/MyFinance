@@ -5,6 +5,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 ## [Unreleased]
 
 ### Added
+- **Check de aporte a meta en el Inicio.** En el desglose quincenal, cada meta tiene un check para marcar "ya aparté esta cuota". Registra la contribución (la meta avanza) sin mover la cuota ni el dinero libre (la cuota se calcula sin contar lo aportado en la quincena en curso, así marcar/desmarcar es estable). Se puede desmarcar.
 - **Ventana de desglose al confirmar el salario.** Al marcar un ingreso como recibido en el Inicio, aparece un modal con cuánto reservar para ahorro, cada gasto fijo y cada meta, más el total y lo que queda libre.
 - **Conversión aproximada USD↔CRC.** Las metas (o gastos) en otra moneda se convierten a la moneda activa con una tasa configurable en Ajustes (`settings.usd_to_crc_rate`, migración v6, default ₡510/$). El sobre Metas y el desglose ya cuentan las metas en dólares al cambio.
 

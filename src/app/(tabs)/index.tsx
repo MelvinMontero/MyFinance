@@ -11,10 +11,16 @@ import { BucketCard } from '@/features/budgets/BucketCard';
 import { ProvisionRow } from '@/features/budgets/ProvisionRow';
 import { getBudgetForPeriod, type BudgetForPeriod } from '@/features/budgets/repository';
 import { getQuincenaBudget, type QuincenaBudget } from '@/features/budgets/quincena';
-import { getQuincena } from '@/features/cycle/cycle';
+import { getQuincena, quincenaKey } from '@/features/cycle/cycle';
 import { currentPeriod, getPaymentSummary } from '@/features/fixed-expenses/repository';
 import { rankGoalsByCutPriority } from '@/features/goals/calc';
-import { listGoalsWithPlan, type GoalWithPlan } from '@/features/goals/repository';
+import { GoalCheckRow } from '@/features/goals/GoalCheckRow';
+import {
+  addContribution,
+  listGoalsWithPlan,
+  removeQuincenaContributions,
+  type GoalWithPlan,
+} from '@/features/goals/repository';
 import { IncomeConfirmCard } from '@/features/incomes/IncomeConfirmCard';
 import {
   listOccurrencesInRange,
@@ -65,7 +71,7 @@ export default function HomeScreen() {
         // que entren en la reserva y en el desglose.
         const goals = await listGoalsWithPlan(today);
         const goalsReserve = goals.reduce(
-          (sum, g) => sum + convertCents(g.plan.perQuincenaCents, g.currency, liveCurrency, liveRate),
+          (sum, g) => sum + convertCents(g.quincena_quota_cents, g.currency, liveCurrency, liveRate),
           0,
         );
         // Reserva mensual ≈ las cuotas de las quincenas del mes (hasta 2).
@@ -73,7 +79,7 @@ export default function HomeScreen() {
           (sum, g) =>
             sum +
             convertCents(
-              g.plan.perQuincenaCents * monthlyQuotaFactor(g),
+              g.quincena_quota_cents * monthlyQuotaFactor(g),
               g.currency,
               liveCurrency,
               liveRate,
@@ -110,6 +116,23 @@ export default function HomeScreen() {
         await loadData(false); // refresca sin spinner: el dinero entra/sale de los sobres
         // Al CONFIRMAR (marcar como recibido) mostramos el desglose de cuánto reservar.
         if (confirmed) setBreakdownVisible(true);
+      } catch (err) {
+        Alert.alert('Error', err instanceof Error ? err.message : String(err));
+      }
+    },
+    [loadData],
+  );
+
+  // Marca/desmarca el aporte a una meta en la quincena en curso.
+  const handleToggleGoalSaved = useCallback(
+    async (goalId: string, quotaCents: number, currentlyDone: boolean) => {
+      try {
+        if (currentlyDone) {
+          await removeQuincenaContributions(goalId, quincenaKey(getQuincena(new Date())));
+        } else {
+          await addContribution(goalId, quotaCents);
+        }
+        await loadData(false);
       } catch (err) {
         Alert.alert('Error', err instanceof Error ? err.message : String(err));
       }
@@ -169,6 +192,7 @@ export default function HomeScreen() {
             rate={liveRate}
             paymentSummary={data.paymentSummary}
             onConfirm={handleConfirmOccurrence}
+            onToggleGoalSaved={handleToggleGoalSaved}
           />
         ) : (
           <EmptyState onAddIncome={() => router.push('/income/new')} />
@@ -243,6 +267,7 @@ function BucketsBlock({
   rate,
   paymentSummary,
   onConfirm,
+  onToggleGoalSaved,
 }: {
   monthly: BudgetForPeriod;
   quincena: QuincenaBudget;
@@ -253,6 +278,7 @@ function BucketsBlock({
   rate: number;
   paymentSummary: { paid: number; total: number };
   onConfirm: (id: string, confirmed: boolean) => void;
+  onToggleGoalSaved: (goalId: string, quotaCents: number, currentlyDone: boolean) => void;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>('biweekly');
 
@@ -302,6 +328,7 @@ function BucketsBlock({
           savingsPercent={savingsPercent}
           rate={rate}
           onConfirm={onConfirm}
+          onToggleGoalSaved={onToggleGoalSaved}
         />
       )}
     </>
@@ -432,7 +459,7 @@ function MonthlyView({
               key={g.id}
               label={g.name}
               amountCents={convertCents(
-                g.plan.perQuincenaCents * monthlyQuotaFactor(g),
+                g.quincena_quota_cents * monthlyQuotaFactor(g),
                 g.currency,
                 currency,
                 rate,
@@ -456,6 +483,7 @@ function QuincenaView({
   savingsPercent,
   rate,
   onConfirm,
+  onToggleGoalSaved,
 }: {
   quincena: QuincenaBudget;
   goals: GoalWithPlan[];
@@ -464,11 +492,12 @@ function QuincenaView({
   savingsPercent: number;
   rate: number;
   onConfirm: (id: string, confirmed: boolean) => void;
+  onToggleGoalSaved: (goalId: string, quotaCents: number, currentlyDone: boolean) => void;
 }) {
   const { startDate, endDate } = quincena.quincena;
   const rangeLabel = `${format(parseISO(startDate), "d 'de' MMM", { locale: es })} – ${format(parseISO(endDate), "d 'de' MMM", { locale: es })}`;
   const totalToProvision = quincena.savings + quincena.goalsReserve + quincena.fixedExpenses;
-  const cutOrder = rankGoalsByCutPriority(goals.filter((g) => g.plan.perQuincenaCents > 0));
+  const cutOrder = rankGoalsByCutPriority(goals.filter((g) => g.quincena_quota_cents > 0));
   const cutNames = cutOrder
     .map((id) => goals.find((g) => g.id === id)?.name)
     .filter((n): n is string => Boolean(n));
@@ -607,16 +636,16 @@ function QuincenaView({
 
         {goals.length > 0 && (
           <Text className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Metas
+            Metas — marcá lo que ya apartaste
           </Text>
         )}
         {goals.map((g) => (
-          <ProvisionRow
+          <GoalCheckRow
             key={`g-${g.id}`}
-            label={g.name}
-            amountCents={convertCents(g.plan.perQuincenaCents, g.currency, currency, rate)}
-            currency={currency}
-            subtitle={goalSubtitle(g, currency)}
+            goal={g}
+            viewCurrency={currency}
+            rate={rate}
+            onToggle={onToggleGoalSaved}
           />
         ))}
 
