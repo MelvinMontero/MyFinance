@@ -139,25 +139,25 @@ npm run test:watch       # Jest watch mode
 2. `npm run start` y escanear el QR.
 3. (Alternativa: emulador en Android Studio.)
 
-## Estado actual — v0.1.0 (Fase 1)
+## Estado actual — v0.9.0 (Ciclo quincenal + Metas)
 
-✅ **Fase 1 completa — Setup + DB.** Ver [CHANGELOG.md](./CHANGELOG.md) para detalle.
+✅ **Fases 1–7 + ciclo quincenal real + metas de ahorro.** Ver [CHANGELOG.md](./CHANGELOG.md) para el detalle por versión.
 
-- Expo SDK 54 + TS strict + Expo Router 6 + NativeWind 4.
-- SQLite con migrador versionado y 8 tablas del schema final.
-- Seeds idempotentes: 15 categorías + settings (savings_percent=20, CRC).
-- Pantalla Home placeholder con estados loading/ready/error.
-- Money utility cubierta con 19 tests (toCents, fromCents, formatCents, parseAmount).
-- expo-doctor: 17/17 checks OK.
+- Expo SDK 54 + TS strict + Expo Router 6 (file-based, `src/app/`) + NativeWind 4 + Zustand 5.
+- SQLite con migrador versionado e **inmutable** — **migración v5 aplicada**, 10 tablas (incluye `goals`, `goal_contributions`).
+- Ingresos, gastos fijos, gastos variables, sobres mensuales, reportes, onboarding, biometría, dark mode, backup JSON.
+- **Ciclo quincenal real** (Q1 = 1–14, Q2 = 15–fin): `features/cycle/` + `features/budgets/quincena.ts`. El gasto mensual se **amortiza** entre las quincenas que faltan hasta su cobro.
+- **Metas de ahorro** con prioridad (alta/media/baja): `features/goals/` + pestaña Metas (7ª). Cuota por quincena = `ceil(restante / quincenas)`.
+- **Notificaciones** locales: día de pago, gasto fijo por vencer (días configurables), cuenta regresiva de metas, alerta de sobregasto.
+- Tests: **105** (lógica pura con TDD: `cycle`, `expense`, `calculate`, `goals/calc`, `notifications/plan`, `money`, `occurrences`).
 
-## Fases pendientes
+> ⚠️ **Requiere Node ≥ 20.19.4** (RN 0.81 / Expo SDK 54). No corre con Node 18.
 
-- **Fase 2 — Ingresos**: CRUD + frecuencia (one_time, biweekly, monthly), proyección 12 meses, confirmar ocurrencias.
-- **Fase 3 — Gastos fijos**: CRUD con día de pago + registro de pagos por período.
-- **Fase 4 — Cálculo de sobres** (LA MÁS CRÍTICA — TDD obligatorio): `calculateBuckets(period)` + slider de % ahorro + Dashboard con 3 sobres.
-- **Fase 5 — Gastos variables**: FAB de "+", swipe edit/delete, indicador "te quedan ₡X esta semana".
-- **Fase 6 — Reportes**: Pestaña mensual (donut, barras, top categorías) + Anual (stacked bars, línea de tendencia, KPIs).
-- **Fase 7 — Polish**: Tema claro/oscuro, biometría, backup JSON cifrado con PIN, onboarding, notificaciones.
+## Ideas futuras (no comprometidas)
+
+- Historial/resumen mensual de aportes (tabla `goal_contributions` ya lo permite).
+- Gráfico ingresos vs. gastos vs. ahorro por quincena.
+- Cifrado del backup (PIN + AES) y notificación "resumen al cobrar".
 
 ## Decisiones de diseño importantes
 

@@ -22,6 +22,10 @@ interface BackupFile {
   tables: BackupTable[];
 }
 
+// Orden de dependencia (padres antes que hijos) para que el INSERT respete las
+// FK. El borrado en import usa el orden inverso. `goals` antes de
+// `goal_contributions`. Respaldos viejos (sin estas tablas) siguen importando:
+// las tablas ausentes simplemente se saltan.
 const EXPORT_TABLES = [
   'settings',
   'categories',
@@ -31,6 +35,8 @@ const EXPORT_TABLES = [
   'fixed_expense_payments',
   'variable_expenses',
   'monthly_snapshots',
+  'goals',
+  'goal_contributions',
 ];
 
 /**

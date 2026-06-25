@@ -4,6 +4,43 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-25 — Ciclo quincenal real + Metas de ahorro
+
+> Convierte el toggle "Quincenal" cosmético (dividía el mes entre 2) en un cálculo
+> quincenal real, y agrega un módulo completo de metas de ahorro. Implementado
+> sobre la arquitectura existente (no se duplicó nada). Ver
+> [`docs/findings-task0.md`](docs/findings-task0.md) para el contexto del plan.
+
+### Added — Base de datos
+- **Migración v4**: tablas `goals` (con columna `priority` alta/media/baja) y `goal_contributions` (aportes con `quincena_key`).
+- **Migración v5**: `settings.payday_offset_days` (colchón financiero) y `settings.notify_days_before` (anticipación de avisos configurable, default 2).
+- Tipos `Goal`, `GoalContribution`, `GoalPriority`; `Settings`, `UpdateSettingsInput` y store de settings extendidos.
+
+### Added — Lógica (TDD, módulos puros)
+- `features/cycle/cycle.ts`: clasificación de quincena (Q1 = 1–14, Q2 = 15–fin), `quincenaKey`, `quincenaIndex`, `countRemainingQuincenas`.
+- `features/cycle/expense.ts`: **amortización** de un gasto entre las quincenas que faltan hasta su cobro (`expenseProvision`, `monthlyExpenseProvision`) — regla confirmada con el dueño (no dividir entre 2 fijo).
+- `features/goals/calc.ts`: cuota quincenal `ceil(restante / quincenas)`, progreso, vencimiento, y `rankGoalsByCutPriority` (qué meta recortar primero ante déficit).
+- `features/budgets/calculate.ts`: nuevo sobre **Metas** (`goalsReserve`), retrocompatible (default 0 — los 19 tests previos siguen verdes).
+- `features/budgets/quincena.ts`: presupuesto de una quincena real (ingresos, gastos fijos amortizados, variables, reserva de metas) + desglose por ítem y detector de sobregasto del período.
+
+### Added — Interfaz
+- **Dashboard**: el modo Quincenal muestra el cálculo real con desglose "¿Cuánto aparto este cobro?" (cada gasto y meta), sobre Metas y banner de déficit que sugiere recortar las metas de menor prioridad.
+- **Pestaña Metas** (7ª, icono `Target`): lista con barra de progreso, alta, detalle/edición, aportar la cuota de la quincena y eliminar.
+- **Ajustes**: colchón financiero y anticipación de avisos configurables (sliders).
+
+### Added — Notificaciones
+- Constructores puros (`features/notifications/plan.ts`, con tests): recordatorio de **día de pago** (15 y fin de mes), aviso de **gasto fijo** `notify_days_before` días antes y el día, y **cuenta regresiva de metas** (30/15/7/1 días).
+- **Alerta de sobregasto**: al registrar un gasto variable, si supera el dinero libre de la quincena, dispara una notificación inmediata + banner.
+- Reprogramación de la ventana de avisos al abrir la app.
+
+### Added — Respaldo
+- El export/import JSON incluye ahora `goals` y `goal_contributions` (respaldos viejos siguen importando).
+
+### Verificaciones
+- `npm run typecheck`: 0 errores.
+- `npm test`: **105/105** (46 tests nuevos).
+- `npm run lint`: 0 warnings.
+
 ## [0.8.1] - 2026-05-13 — Fase 7 (parte 2): Dark mode en toda la app
 
 ### Added
