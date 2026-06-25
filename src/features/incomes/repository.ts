@@ -18,6 +18,9 @@ export interface NewIncomeInput {
   start_date: string; // 'yyyy-MM-dd'
   end_date?: string | null;
   note?: string | null;
+  /** Días de pago (1–31) para 'biweekly'. */
+  payday_1?: number | null;
+  payday_2?: number | null;
 }
 
 export interface UpdateIncomeInput {
@@ -28,6 +31,8 @@ export interface UpdateIncomeInput {
   end_date?: string | null;
   note?: string | null;
   is_active?: boolean;
+  payday_1?: number | null;
+  payday_2?: number | null;
 }
 
 /**
@@ -51,6 +56,8 @@ export async function createIncome(input: NewIncomeInput): Promise<{
     end_date: input.end_date ?? null,
     is_active: 1 as SqliteBoolean,
     note: input.note ?? null,
+    payday_1: input.frequency === 'biweekly' ? (input.payday_1 ?? null) : null,
+    payday_2: input.frequency === 'biweekly' ? (input.payday_2 ?? null) : null,
     created_at: now,
     updated_at: now,
   };
@@ -63,8 +70,8 @@ export async function createIncome(input: NewIncomeInput): Promise<{
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      `INSERT INTO incomes (id, amount_cents, currency, source, frequency, start_date, end_date, is_active, note, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO incomes (id, amount_cents, currency, source, frequency, start_date, end_date, is_active, note, payday_1, payday_2, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       income.id,
       income.amount_cents,
       income.currency,
@@ -74,6 +81,8 @@ export async function createIncome(input: NewIncomeInput): Promise<{
       income.end_date,
       income.is_active,
       income.note,
+      income.payday_1,
+      income.payday_2,
       income.created_at,
       income.updated_at,
     );
@@ -152,6 +161,14 @@ export async function updateIncome(id: string, patch: UpdateIncomeInput): Promis
   if (patch.is_active !== undefined) {
     sets.push('is_active = ?');
     args.push(patch.is_active ? 1 : 0);
+  }
+  if (patch.payday_1 !== undefined) {
+    sets.push('payday_1 = ?');
+    args.push(patch.payday_1);
+  }
+  if (patch.payday_2 !== undefined) {
+    sets.push('payday_2 = ?');
+    args.push(patch.payday_2);
   }
   if (sets.length === 0) return;
 

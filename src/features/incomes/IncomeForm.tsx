@@ -23,7 +23,7 @@ type Frequency = IncomeFormValues['frequency'];
 
 const FREQUENCY_OPTIONS: { value: Frequency; label: string; hint: string }[] = [
   { value: 'one_time', label: 'Una vez', hint: 'Solo este día' },
-  { value: 'biweekly', label: 'Quincenal', hint: 'Cada 14 días' },
+  { value: 'biweekly', label: 'Quincenal', hint: 'Dos días del mes que elijas' },
   { value: 'monthly', label: 'Mensual', hint: 'Mismo día cada mes' },
 ];
 
@@ -45,6 +45,8 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
       start_date: today,
       end_date: '',
       note: '',
+      payday_1: 15,
+      payday_2: 30,
       ...defaultValues,
     },
   });
@@ -52,6 +54,7 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
   const startDateStr = watch('start_date');
   const endDateStr = watch('end_date');
   const currency = watch('currency');
+  const frequency = watch('frequency');
 
   function openDatePicker(field: 'start_date' | 'end_date') {
     const currentStr = field === 'start_date' ? startDateStr : endDateStr;
@@ -244,6 +247,52 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
           <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.frequency.message}</Text>
         )}
       </View>
+
+      {/* DÍAS DE PAGO (solo quincenal) */}
+      {frequency === 'biweekly' && (
+        <View>
+          <Text className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+            Días de pago del mes
+          </Text>
+          <View className="flex-row gap-2">
+            {(['payday_1', 'payday_2'] as const).map((fieldName, idx) => (
+              <Controller
+                key={fieldName}
+                control={control}
+                name={fieldName}
+                render={({ field: { value, onChange } }) => (
+                  <View className="flex-1">
+                    <Text className="mb-1 text-xs text-gray-500 dark:text-gray-400">
+                      {idx === 0 ? 'Primer pago' : 'Segundo pago'}
+                    </Text>
+                    <View className="flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-3">
+                      <Text className="mr-2 text-base text-gray-500 dark:text-gray-400">Día</Text>
+                      <TextInput
+                        className="flex-1 text-xl font-semibold text-gray-900 dark:text-gray-100"
+                        keyboardType="number-pad"
+                        placeholder={idx === 0 ? '15' : '30'}
+                        placeholderTextColor="#cbd5e1"
+                        maxLength={2}
+                        value={value ? String(value) : ''}
+                        onChangeText={(t) => {
+                          const n = parseInt(t.replace(/\D/g, ''), 10);
+                          onChange(Number.isFinite(n) ? n : undefined);
+                        }}
+                      />
+                    </View>
+                  </View>
+                )}
+              />
+            ))}
+          </View>
+          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Ej. 15 y 30. Si el mes no tiene ese día, se usa el último.
+          </Text>
+          {errors.payday_1 && (
+            <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.payday_1.message}</Text>
+          )}
+        </View>
+      )}
 
       {/* START DATE */}
       <View>

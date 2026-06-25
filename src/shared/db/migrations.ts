@@ -166,4 +166,12 @@ export const migrations: Migration[] = [
       ALTER TABLE settings ADD COLUMN usd_to_crc_rate REAL NOT NULL DEFAULT 510;
     `,
   },
+  {
+    version: 7,
+    description: 'días de pago configurables para ingresos quincenales (payday_1/payday_2)',
+    sql: `
+      ALTER TABLE incomes ADD COLUMN payday_1 INTEGER;
+      ALTER TABLE incomes ADD COLUMN payday_2 INTEGER;
+    `,
+  },
 ];

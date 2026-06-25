@@ -20,11 +20,42 @@ function income(overrides: Partial<Income> = {}): Income {
     is_active: 1,
     note: null,
     currency: 'CRC',
+    payday_1: null,
+    payday_2: null,
     created_at: FIXED_NOW,
     updated_at: FIXED_NOW,
     ...overrides,
   };
 }
+
+describe('generateOccurrences — biweekly con días de pago configurados', () => {
+  it('genera ocurrencias en los días elegidos (clamp al fin de mes corto)', () => {
+    const result = generateOccurrences(
+      income({
+        frequency: 'biweekly',
+        start_date: '2026-01-01',
+        end_date: '2026-02-28',
+        payday_1: 15,
+        payday_2: 30,
+      }),
+      { generateId: makeIdGen(), now: FIXED_NOW },
+    );
+    expect(result.map((o) => o.occurred_at)).toEqual([
+      '2026-01-15',
+      '2026-01-30',
+      '2026-02-15',
+      '2026-02-28', // febrero 2026 tiene 28 días → 30 se recorta
+    ]);
+  });
+
+  it('sin días configurados cae al comportamiento legacy (cada 14 días)', () => {
+    const result = generateOccurrences(
+      income({ frequency: 'biweekly', start_date: '2026-01-01', end_date: '2026-01-31' }),
+      { generateId: makeIdGen(), now: FIXED_NOW },
+    );
+    expect(result.map((o) => o.occurred_at)).toEqual(['2026-01-01', '2026-01-15', '2026-01-29']);
+  });
+});
 
 describe('generateOccurrences — frecuencia one_time', () => {
   it('genera exactamente 1 ocurrencia en start_date', () => {

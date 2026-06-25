@@ -35,6 +35,9 @@ export const incomeFormSchema = z
       .optional()
       .or(z.literal('')),
     note: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
+    // Días de pago (1–31) para frecuencia quincenal.
+    payday_1: z.number().int().min(1, 'Día 1–31').max(31, 'Día 1–31').optional(),
+    payday_2: z.number().int().min(1, 'Día 1–31').max(31, 'Día 1–31').optional(),
   })
   .refine(
     (data) => {
@@ -44,6 +47,13 @@ export const incomeFormSchema = z
     {
       message: 'La fecha de fin no puede ser anterior a la fecha de inicio',
       path: ['end_date'],
+    },
+  )
+  .refine(
+    (data) => data.frequency !== 'biweekly' || (data.payday_1 != null && data.payday_2 != null),
+    {
+      message: 'Elegí los dos días de pago del mes',
+      path: ['payday_1'],
     },
   );
 

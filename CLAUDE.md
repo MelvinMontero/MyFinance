@@ -144,7 +144,7 @@ npm run test:watch       # Jest watch mode
 ✅ **Fases 1–7 + ciclo quincenal real + metas de ahorro.** Ver [CHANGELOG.md](./CHANGELOG.md) para el detalle por versión.
 
 - Expo SDK 54 + TS strict + Expo Router 6 (file-based, `src/app/`) + NativeWind 4 + Zustand 5.
-- SQLite con migrador versionado e **inmutable** — **migración v5 aplicada**, 10 tablas (incluye `goals`, `goal_contributions`).
+- SQLite con migrador versionado e **inmutable** — **migración v7 aplicada**, 10 tablas (incluye `goals`, `goal_contributions`; settings con tasa USD/CRC; incomes con días de pago).
 - Ingresos, gastos fijos, gastos variables, sobres mensuales, reportes, onboarding, biometría, dark mode, backup JSON.
 - **Ciclo quincenal real** (Q1 = 1–14, Q2 = 15–fin): `features/cycle/` + `features/budgets/quincena.ts`. El gasto mensual se **amortiza** entre las quincenas que faltan hasta su cobro.
 - **Metas de ahorro** con prioridad (alta/media/baja): `features/goals/` + pestaña Metas (7ª). Cuota por quincena = `ceil(restante / quincenas)`.

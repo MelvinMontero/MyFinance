@@ -23,20 +23,28 @@ function at9am(d: Date): Date {
 }
 
 /**
- * Próximos `count` días de pago (15 y último día del mes) a las 9am, posteriores
- * a `from`. Recuerda registrar el salario y revisar cuánto apartar.
+ * Próximos `count` días de pago a las 9am, posteriores a `from`. `days` son los
+ * días del mes en que se cobra (ej. [15, 30]); si un mes no tiene ese día, se
+ * usa el último. Recuerda registrar el salario y revisar cuánto apartar.
  */
-export function buildPaydayReminders(from: Date, count: number): PlannedNotification[] {
+export function buildPaydayReminders(
+  from: Date,
+  days: number[],
+  count: number,
+): PlannedNotification[] {
+  const sortedDays = [...new Set(days)].filter((d) => d >= 1 && d <= 31).sort((a, b) => a - b);
+  if (sortedDays.length === 0) return [];
+
   const result: PlannedNotification[] = [];
   let year = from.getFullYear();
   let month = from.getMonth();
   let guard = 0;
 
   while (result.length < count && guard < 240) {
-    const lastDay = getDaysInMonth(new Date(year, month, 1));
-    for (const day of [15, lastDay]) {
+    const dim = getDaysInMonth(new Date(year, month, 1));
+    for (const d of sortedDays) {
       if (result.length >= count) break;
-      const date = at9am(new Date(year, month, day));
+      const date = at9am(new Date(year, month, Math.min(d, dim)));
       if (date.getTime() > from.getTime()) {
         result.push({
           key: `payday-${date.toISOString()}`,

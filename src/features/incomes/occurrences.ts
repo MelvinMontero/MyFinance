@@ -18,7 +18,11 @@ export interface GenerateOccurrencesOptions {
 type IncomeForGen = Pick<
   Income,
   'id' | 'amount_cents' | 'frequency' | 'start_date' | 'end_date'
->;
+> & {
+  /** Días de pago (1–31) para 'biweekly'. Si faltan, se usa cada 14 días (legacy). */
+  payday_1?: number | null;
+  payday_2?: number | null;
+};
 
 /**
  * Genera las ocurrencias proyectadas para un ingreso.
@@ -66,6 +70,38 @@ export function generateOccurrences(
 
   if (income.frequency === 'one_time') {
     return [build(startDate)];
+  }
+
+  // Quincenal con días de pago configurados (ej. 15 y 30): ocurrencias en esos
+  // días de cada mes, recortando al último día si el mes es más corto.
+  if (income.frequency === 'biweekly') {
+    const days = [...new Set([income.payday_1, income.payday_2])]
+      .filter((d): d is number => typeof d === 'number' && d >= 1 && d <= 31)
+      .sort((a, b) => a - b);
+    if (days.length > 0) {
+      const result: IncomeOccurrence[] = [];
+      let year = startDate.getFullYear();
+      let month = startDate.getMonth();
+      const CAP = 480;
+      for (let i = 0; i < CAP; i++) {
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (const d of days) {
+          const date = new Date(year, month, Math.min(d, daysInMonth));
+          if (!isAfter(startDate, date) && !isAfter(date, windowEnd)) {
+            result.push(build(date));
+          }
+        }
+        if (isAfter(new Date(year, month, 1), windowEnd)) break;
+        month += 1;
+        if (month > 11) {
+          month = 0;
+          year += 1;
+        }
+      }
+      result.sort((a, b) => a.occurred_at.localeCompare(b.occurred_at));
+      return result;
+    }
+    // sin días configurados → cada 14 días (legacy, abajo)
   }
 
   const step =

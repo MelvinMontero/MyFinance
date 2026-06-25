@@ -63,6 +63,8 @@ export default function EditIncomeScreen() {
         start_date: values.start_date,
         end_date: values.end_date && values.end_date.trim() !== '' ? values.end_date : null,
         note: values.note?.trim() ? values.note.trim() : null,
+        payday_1: values.frequency === 'biweekly' ? (values.payday_1 ?? null) : null,
+        payday_2: values.frequency === 'biweekly' ? (values.payday_2 ?? null) : null,
       });
       router.back();
     } catch (err) {
@@ -151,6 +153,8 @@ export default function EditIncomeScreen() {
             start_date: income.start_date,
             end_date: income.end_date ?? '',
             note: income.note ?? '',
+            payday_1: income.payday_1 ?? undefined,
+            payday_2: income.payday_2 ?? undefined,
           }}
         />
 

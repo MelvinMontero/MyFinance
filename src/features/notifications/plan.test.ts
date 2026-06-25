@@ -1,15 +1,20 @@
 import { buildExpenseReminders, buildGoalCountdown, buildPaydayReminders } from './plan';
 
-describe('buildPaydayReminders — días de pago (15 y fin de mes) a las 9am', () => {
-  it('devuelve los próximos N días de pago desde una fecha', () => {
-    const r = buildPaydayReminders(new Date(2026, 0, 5), 3);
+describe('buildPaydayReminders — días de pago configurables a las 9am', () => {
+  it('devuelve los próximos N días de pago (15 y fin de mes con clamp)', () => {
+    const r = buildPaydayReminders(new Date(2026, 0, 5), [15, 31], 3);
     expect(r.map((n) => fmt(n.date))).toEqual(['2026-01-15', '2026-01-31', '2026-02-15']);
     r.forEach((n) => expect(n.date.getHours()).toBe(9));
     expect(r[0]!.title).toMatch(/pago/i);
   });
 
+  it('respeta días personalizados (ej. 15 y 30, recortando febrero)', () => {
+    const r = buildPaydayReminders(new Date(2026, 0, 5), [15, 30], 3);
+    expect(r.map((n) => fmt(n.date))).toEqual(['2026-01-15', '2026-01-30', '2026-02-15']);
+  });
+
   it('si hoy es día 15, ese mismo pago cuenta (la alerta es a las 9am)', () => {
-    const r = buildPaydayReminders(new Date(2026, 0, 15), 1);
+    const r = buildPaydayReminders(new Date(2026, 0, 15), [15, 31], 1);
     expect(fmt(r[0]!.date)).toBe('2026-01-15');
   });
 });

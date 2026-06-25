@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 
 import { listFixedExpenses } from '@/features/fixed-expenses/repository';
 import { listGoals } from '@/features/goals/repository';
+import { listIncomes } from '@/features/incomes/repository';
 import { formatCents } from '@/shared/utils/money';
 
 import {
@@ -83,8 +84,21 @@ export async function rescheduleAllNotifications(
     .filter((g) => g.currency === currency)
     .map((g) => ({ id: g.id, name: g.name, deadline: parseISO(g.deadline) }));
 
+  // Días de pago = los configurados en los ingresos quincenales activos; si no
+  // hay, se usa 15 y fin de mes por defecto.
+  const incomes = await listIncomes({ active: true });
+  const configuredDays = [
+    ...new Set(
+      incomes
+        .filter((i) => i.frequency === 'biweekly')
+        .flatMap((i) => [i.payday_1, i.payday_2])
+        .filter((d): d is number => typeof d === 'number'),
+    ),
+  ];
+  const paydayDays = configuredDays.length > 0 ? configuredDays : [15, 31];
+
   const planned: PlannedNotification[] = [
-    ...buildPaydayReminders(now, PAYDAY_WINDOW),
+    ...buildPaydayReminders(now, paydayDays, PAYDAY_WINDOW),
     ...buildExpenseReminders(expenses, now, notifyDaysBefore),
     ...buildGoalCountdown(goals, now),
   ];

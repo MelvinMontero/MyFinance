@@ -23,6 +23,8 @@ export default function NewIncomeScreen() {
         start_date: values.start_date,
         end_date: values.end_date && values.end_date.trim() !== '' ? values.end_date : null,
         note: values.note?.trim() ? values.note.trim() : null,
+        payday_1: values.frequency === 'biweekly' ? (values.payday_1 ?? null) : null,
+        payday_2: values.frequency === 'biweekly' ? (values.payday_2 ?? null) : null,
       });
       router.back();
       // Aviso al usuario de cuántas ocurrencias se proyectaron

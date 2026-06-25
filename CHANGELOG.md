@@ -5,6 +5,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 ## [Unreleased]
 
 ### Added
+- **Ingresos quincenales con días de pago configurables.** Al elegir frecuencia "Quincenal" se piden los dos días del mes en que se cobra (ej. 15 y 30); las ocurrencias se generan en esos días (recortando al último día si el mes es más corto). Migración v7 (`incomes.payday_1`, `incomes.payday_2`). Los recordatorios de día de pago usan esos días configurados.
 - **Abonos a metas de cualquier monto.** En el detalle de la meta hay un campo "Registrar abono" para apartar la cuota sugerida o el monto que quieras. El abono se rebaja del total: baja el restante y recalcula la cuota al instante. El detalle muestra "Te faltan ₡X" y lo aportado en la quincena.
 - **Check de aporte a meta en el Inicio.** En el desglose quincenal, cada meta tiene un check para marcar "ya aparté la cuota" (aporta la cuota sugerida); se puede desmarcar (borra los aportes de la quincena).
 - **Ventana de desglose al confirmar el salario.** Al marcar un ingreso como recibido en el Inicio, aparece un modal con cuánto reservar para ahorro, cada gasto fijo y cada meta, más el total y lo que queda libre.
@@ -15,6 +16,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 - **El Inicio abre en la vista Quincenal** (era Mensual) y la vista **Mensual también refleja las Metas** (sobre Metas + desglose de cuotas del mes). Antes las metas solo se veían en la vista quincenal.
 
 ### Fixed
+- **Permisos de notificaciones para el APK.** `app.json` solo tenía permisos de biometría; sin `POST_NOTIFICATIONS` (Android 13+) el APK no mostraría notificaciones. Se agregaron `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `VIBRATE` y un color de acento al plugin `expo-notifications`. (En Expo Go siguen sin funcionar; en un APK/dev build, sí.)
 - **Las metas ya se reflejan siempre en el Inicio.** Antes el Inicio filtraba por moneda y, si no coincidía, mostraba "sin metas activas" aunque la meta existiera. Ahora se muestran todas (la reserva que afecta los sobres sigue contando solo la moneda activa).
 - **El pago de un gasto fijo se refleja en el Inicio.** En la vista Quincenal, un fijo marcado como pagado este mes aparece como "✓ pagado" y deja de contar en el "cuánto apartar".
 - **La vista Quincenal resta los gastos extras** del disponible (antes mostraba el dinero libre sin restar lo gastado) y muestra aviso de sobregasto, igual que la Mensual.

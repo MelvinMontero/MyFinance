@@ -42,6 +42,9 @@ export interface Income {
   is_active: SqliteBoolean;
   note: string | null;
   currency: string; // ISO 4217 — agregado en migración v2
+  /** Días del mes de pago para frecuencia 'biweekly' (1–31). Null = cada 14 días (legacy). */
+  payday_1: number | null;
+  payday_2: number | null;
   created_at: string;
   updated_at: string;
 }
