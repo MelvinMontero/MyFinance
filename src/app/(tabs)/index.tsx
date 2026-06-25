@@ -3,7 +3,7 @@ import { es } from 'date-fns/locale';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlertTriangle, PiggyBank, Plus, Receipt, Target, Wallet } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BucketCard } from '@/features/budgets/BucketCard';
@@ -14,6 +14,12 @@ import { getQuincena } from '@/features/cycle/cycle';
 import { currentPeriod, getPaymentSummary } from '@/features/fixed-expenses/repository';
 import { rankGoalsByCutPriority } from '@/features/goals/calc';
 import { listGoalsWithPlan, type GoalWithPlan } from '@/features/goals/repository';
+import { IncomeConfirmCard } from '@/features/incomes/IncomeConfirmCard';
+import {
+  listOccurrencesInRange,
+  setOccurrenceConfirmed,
+  type OccurrenceWithSource,
+} from '@/features/incomes/repository';
 import { useSettings } from '@/features/settings/store';
 import { initDb } from '@/shared/db';
 import type { GoalPriority } from '@/shared/db/types';
@@ -27,6 +33,7 @@ interface HomeData {
   quincena: QuincenaBudget;
   goals: GoalWithPlan[];
   paymentSummary: { paid: number; total: number };
+  occurrences: OccurrenceWithSource[];
 }
 
 export default function HomeScreen() {
@@ -39,40 +46,58 @@ export default function HomeScreen() {
   const liveCurrency = useSettings((s) => s.currency);
   const liveSavingsPercent = useSettings((s) => s.savings_percent);
 
+  const loadData = useCallback(
+    async (showLoading: boolean) => {
+      if (showLoading) setStatus('loading');
+      try {
+        await initDb();
+        await useSettings.getState().load();
+        const period = currentPeriod();
+        const today = new Date();
+        const quincena = getQuincena(today);
+
+        const goalsAll = await listGoalsWithPlan(today);
+        const goals = goalsAll.filter((g) => g.currency === liveCurrency);
+        // Reserva quincenal = 1 cuota; reserva mensual ≈ las cuotas de las quincenas
+        // del mes (hasta 2), para que la vista Mensual también refleje las metas.
+        const goalsReserve = goals.reduce((sum, g) => sum + g.plan.perQuincenaCents, 0);
+        const monthlyGoalsReserve = goals.reduce(
+          (sum, g) => sum + g.plan.perQuincenaCents * monthlyQuotaFactor(g),
+          0,
+        );
+
+        const [monthly, qb, summary, occurrences] = await Promise.all([
+          getBudgetForPeriod(period, liveCurrency, liveSavingsPercent, monthlyGoalsReserve),
+          getQuincenaBudget(quincena, liveCurrency, liveSavingsPercent, goalsReserve),
+          getPaymentSummary(period, liveCurrency),
+          listOccurrencesInRange(quincena.startDate, quincena.endDate, liveCurrency),
+        ]);
+        setData({ monthly, quincena: qb, goals, paymentSummary: summary, occurrences });
+        setStatus('ready');
+      } catch (err) {
+        setErrorMsg(err instanceof Error ? err.message : String(err));
+        setStatus('error');
+      }
+    },
+    [liveCurrency, liveSavingsPercent],
+  );
+
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
-      (async () => {
-        setStatus('loading');
-        try {
-          await initDb();
-          await useSettings.getState().load();
-          const period = currentPeriod();
-          const today = new Date();
-          const quincena = getQuincena(today);
+      void loadData(true);
+    }, [loadData]),
+  );
 
-          const goalsAll = await listGoalsWithPlan(today);
-          const goals = goalsAll.filter((g) => g.currency === liveCurrency);
-          const goalsReserve = goals.reduce((sum, g) => sum + g.plan.perQuincenaCents, 0);
-
-          const [monthly, qb, summary] = await Promise.all([
-            getBudgetForPeriod(period, liveCurrency, liveSavingsPercent),
-            getQuincenaBudget(quincena, liveCurrency, liveSavingsPercent, goalsReserve),
-            getPaymentSummary(period, liveCurrency),
-          ]);
-          if (cancelled) return;
-          setData({ monthly, quincena: qb, goals, paymentSummary: summary });
-          setStatus('ready');
-        } catch (err) {
-          if (cancelled) return;
-          setErrorMsg(err instanceof Error ? err.message : String(err));
-          setStatus('error');
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [liveCurrency, liveSavingsPercent]),
+  const handleConfirmOccurrence = useCallback(
+    async (id: string, confirmed: boolean) => {
+      try {
+        await setOccurrenceConfirmed(id, confirmed);
+        await loadData(false); // refresca sin spinner: el dinero entra/sale de los sobres
+      } catch (err) {
+        Alert.alert('Error', err instanceof Error ? err.message : String(err));
+      }
+    },
+    [loadData],
   );
 
   const periodLabel = formatPeriodLabel(currentPeriod());
@@ -98,7 +123,12 @@ export default function HomeScreen() {
   if (!data) return null;
 
   const { monthly } = data;
-  const hasIncome = monthly.income > 0 || data.quincena.income > 0;
+  const hasIncome =
+    monthly.income > 0 ||
+    monthly.pendingIncome > 0 ||
+    data.quincena.income > 0 ||
+    data.quincena.pendingIncome > 0 ||
+    data.occurrences.length > 0;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
@@ -116,9 +146,11 @@ export default function HomeScreen() {
             monthly={monthly}
             quincena={data.quincena}
             goals={data.goals}
+            occurrences={data.occurrences}
             currency={liveCurrency}
             savingsPercent={liveSavingsPercent}
             paymentSummary={data.paymentSummary}
+            onConfirm={handleConfirmOccurrence}
           />
         ) : (
           <EmptyState onAddIncome={() => router.push('/income/new')} />
@@ -178,18 +210,22 @@ function BucketsBlock({
   monthly,
   quincena,
   goals,
+  occurrences,
   currency,
   savingsPercent,
   paymentSummary,
+  onConfirm,
 }: {
   monthly: BudgetForPeriod;
   quincena: QuincenaBudget;
   goals: GoalWithPlan[];
+  occurrences: OccurrenceWithSource[];
   currency: string;
   savingsPercent: number;
   paymentSummary: { paid: number; total: number };
+  onConfirm: (id: string, confirmed: boolean) => void;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
+  const [viewMode, setViewMode] = useState<ViewMode>('biweekly');
 
   return (
     <>
@@ -220,22 +256,37 @@ function BucketsBlock({
       </View>
 
       {viewMode === 'monthly' ? (
-        <MonthlyView budget={monthly} currency={currency} savingsPercent={savingsPercent} paymentSummary={paymentSummary} />
+        <MonthlyView
+          budget={monthly}
+          goals={goals}
+          currency={currency}
+          savingsPercent={savingsPercent}
+          paymentSummary={paymentSummary}
+        />
       ) : (
-        <QuincenaView quincena={quincena} goals={goals} currency={currency} savingsPercent={savingsPercent} />
+        <QuincenaView
+          quincena={quincena}
+          goals={goals}
+          occurrences={occurrences}
+          currency={currency}
+          savingsPercent={savingsPercent}
+          onConfirm={onConfirm}
+        />
       )}
     </>
   );
 }
 
-/** Vista mensual de resumen (los 3 sobres del mes). */
+/** Vista mensual de resumen (sobres del mes, con Metas). */
 function MonthlyView({
   budget,
+  goals,
   currency,
   savingsPercent,
   paymentSummary,
 }: {
   budget: BudgetForPeriod;
+  goals: GoalWithPlan[];
   currency: string;
   savingsPercent: number;
   paymentSummary: { paid: number; total: number };
@@ -274,6 +325,15 @@ function MonthlyView({
         </View>
       )}
 
+      {budget.pendingIncome > 0 && (
+        <View className="mt-4 rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 p-4">
+          <Text className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            Tenés {formatCents(budget.pendingIncome, { currency })} de ingresos por confirmar este mes.
+            Marcálos en la vista Quincenal cuando te paguen para que cuenten.
+          </Text>
+        </View>
+      )}
+
       <View className="mt-6 gap-3">
         <BucketCard
           Icon={PiggyBank}
@@ -282,6 +342,14 @@ function MonthlyView({
           currency={currency}
           color="emerald"
           subtitle={`Meta — ${savingsPercent}% del ingreso este mes`}
+        />
+        <BucketCard
+          Icon={Target}
+          title="Metas"
+          amount={budget.goalsReserve}
+          currency={currency}
+          color="emerald"
+          subtitle={goals.length === 0 ? 'Sin metas activas' : 'Aporte a tus metas este mes'}
         />
         <BucketCard
           Icon={Receipt}
@@ -322,6 +390,21 @@ function MonthlyView({
           }
         />
       </View>
+
+      {goals.length > 0 && (
+        <View className="mt-6 rounded-2xl bg-white dark:bg-gray-900 p-4">
+          <Text className="text-base font-bold text-gray-900 dark:text-gray-100">Metas este mes</Text>
+          {goals.map((g) => (
+            <ProvisionRow
+              key={g.id}
+              label={g.name}
+              amountCents={g.plan.perQuincenaCents * monthlyQuotaFactor(g)}
+              currency={currency}
+              subtitle={goalSubtitle(g)}
+            />
+          ))}
+        </View>
+      )}
     </>
   );
 }
@@ -330,13 +413,17 @@ function MonthlyView({
 function QuincenaView({
   quincena,
   goals,
+  occurrences,
   currency,
   savingsPercent,
+  onConfirm,
 }: {
   quincena: QuincenaBudget;
   goals: GoalWithPlan[];
+  occurrences: OccurrenceWithSource[];
   currency: string;
   savingsPercent: number;
+  onConfirm: (id: string, confirmed: boolean) => void;
 }) {
   const { startDate, endDate } = quincena.quincena;
   const rangeLabel = `${format(parseISO(startDate), "d 'de' MMM", { locale: es })} – ${format(parseISO(endDate), "d 'de' MMM", { locale: es })}`;
@@ -348,16 +435,24 @@ function QuincenaView({
 
   return (
     <>
-      {/* HERO ingreso de la quincena */}
+      {/* HERO ingreso CONFIRMADO de la quincena */}
       <View className="mt-6 rounded-3xl bg-blue-50 dark:bg-blue-950 p-6">
         <Text className="text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-          Ingreso de esta quincena
+          Ingreso confirmado de esta quincena
         </Text>
         <Text className="mt-2 text-5xl font-bold text-blue-900 dark:text-blue-100">
           {formatCents(quincena.income, { currency })}
         </Text>
         <Text className="mt-1 text-sm text-blue-800 dark:text-blue-200">{rangeLabel}</Text>
+        {quincena.pendingIncome > 0 && (
+          <Text className="mt-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+            + {formatCents(quincena.pendingIncome, { currency })} por confirmar (no cuenta aún)
+          </Text>
+        )}
       </View>
+
+      {/* CHECK de ingresos: marcá lo que ya te pagaron */}
+      <IncomeConfirmCard occurrences={occurrences} currency={currency} onToggle={onConfirm} />
 
       {/* DÉFICIT */}
       {quincena.isOverBudget && (
@@ -488,6 +583,11 @@ function goalSubtitle(g: GoalWithPlan): string {
   if (g.plan.isComplete) return `${PRIORITY_LABEL[g.priority]} · completada`;
   if (g.plan.isOverdue) return `${PRIORITY_LABEL[g.priority]} · fecha vencida`;
   return `${PRIORITY_LABEL[g.priority]} · faltan ${g.plan.remainingQuincenas} quincenas`;
+}
+
+/** Cuántas cuotas de quincena de una meta aplican en un mes (1 o 2). */
+function monthlyQuotaFactor(g: GoalWithPlan): number {
+  return Math.min(2, Math.max(1, g.plan.remainingQuincenas));
 }
 
 function EmptyState({ onAddIncome }: { onAddIncome: () => void }) {

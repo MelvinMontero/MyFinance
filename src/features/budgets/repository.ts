@@ -5,6 +5,8 @@ import { calculateBuckets, type BucketBreakdown } from './calculate';
 export interface BudgetForPeriod extends BucketBreakdown {
   /** Códigos ISO de otras monedas con registros activos (no incluidas en este cálculo). */
   otherCurrenciesPresent: string[];
+  /** Ingresos del período proyectados pero AÚN SIN CONFIRMAR (no cuentan como disponibles). */
+  pendingIncome: number;
 }
 
 /**
@@ -17,17 +19,33 @@ export async function getBudgetForPeriod(
   period: string,
   currency: string,
   savingsPercent: number,
+  goalsReserveAmount = 0,
 ): Promise<BudgetForPeriod> {
   const db = await getDb();
 
-  // INGRESOS: SUM de income_occurrences cuyo income padre está en esta moneda.
+  // INGRESOS: SUM de income_occurrences CONFIRMADAS (is_confirmed = 1).
+  // Lo proyectado pero no recibido NO cuenta como dinero disponible.
   const incomeRow = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(io.amount_cents), 0) AS total
        FROM income_occurrences io
        JOIN incomes i ON i.id = io.income_id
       WHERE substr(io.occurred_at, 1, 7) = ?
         AND i.currency = ?
-        AND i.is_active = 1`,
+        AND i.is_active = 1
+        AND io.is_confirmed = 1`,
+    period,
+    currency,
+  );
+
+  // PENDIENTE: ingresos del período proyectados pero todavía sin confirmar.
+  const pendingRow = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(io.amount_cents), 0) AS total
+       FROM income_occurrences io
+       JOIN incomes i ON i.id = io.income_id
+      WHERE substr(io.occurred_at, 1, 7) = ?
+        AND i.currency = ?
+        AND i.is_active = 1
+        AND io.is_confirmed = 0`,
     period,
     currency,
   );
@@ -77,10 +95,12 @@ export async function getBudgetForPeriod(
     savingsPercent,
     fixedExpensesAmount: fixedRow?.total ?? 0,
     variableExpensesAmount: variableRow?.total ?? 0,
+    goalsReserveAmount,
   });
 
   return {
     ...breakdown,
     otherCurrenciesPresent: otherRows.map((r) => r.currency),
+    pendingIncome: pendingRow?.total ?? 0,
   };
 }

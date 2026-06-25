@@ -192,6 +192,38 @@ export async function listOccurrences(
   );
 }
 
+/** Ocurrencia + datos de su ingreso padre (fuente y moneda). */
+export interface OccurrenceWithSource extends IncomeOccurrence {
+  source: string | null;
+  currency: string;
+}
+
+/**
+ * Lista las ocurrencias en un rango de fechas [startDate, endDate] de ingresos
+ * activos en la moneda dada, con la fuente del ingreso. Para el panel
+ * "Ingresos por confirmar" del Inicio.
+ */
+export async function listOccurrencesInRange(
+  startDate: string,
+  endDate: string,
+  currency: string,
+): Promise<OccurrenceWithSource[]> {
+  const db = await getDb();
+  return db.getAllAsync<OccurrenceWithSource>(
+    `SELECT io.id, io.income_id, io.amount_cents, io.occurred_at, io.is_confirmed, io.created_at,
+            i.source AS source, i.currency AS currency
+       FROM income_occurrences io
+       JOIN incomes i ON i.id = io.income_id
+      WHERE io.occurred_at >= ? AND io.occurred_at <= ?
+        AND i.currency = ?
+        AND i.is_active = 1
+      ORDER BY io.is_confirmed ASC, io.occurred_at ASC`,
+    startDate,
+    endDate,
+    currency,
+  );
+}
+
 export async function setOccurrenceConfirmed(
   id: string,
   confirmed: boolean,

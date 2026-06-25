@@ -34,6 +34,8 @@ export interface QuincenaBudget extends BucketBreakdown {
   expenseProvisions: ExpenseProvisionRow[];
   /** Códigos ISO de otras monedas con registros activos (no incluidas). */
   otherCurrenciesPresent: string[];
+  /** Ingreso de la quincena proyectado pero AÚN SIN CONFIRMAR (no cuenta como disponible). */
+  pendingIncome: number;
 }
 
 interface FixedExpenseLite {
@@ -58,13 +60,29 @@ export async function getQuincenaBudget(
   const { period, startDate, endDate } = quincena;
   const from = parseISO(startDate);
 
+  // Solo cuenta el ingreso CONFIRMADO (recibido). Lo proyectado sin confirmar
+  // se reporta aparte en `pendingIncome` y no infla los sobres.
   const incomeRow = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(io.amount_cents), 0) AS total
        FROM income_occurrences io
        JOIN incomes i ON i.id = io.income_id
       WHERE io.occurred_at >= ? AND io.occurred_at <= ?
         AND i.currency = ?
-        AND i.is_active = 1`,
+        AND i.is_active = 1
+        AND io.is_confirmed = 1`,
+    startDate,
+    endDate,
+    currency,
+  );
+
+  const pendingRow = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(io.amount_cents), 0) AS total
+       FROM income_occurrences io
+       JOIN incomes i ON i.id = io.income_id
+      WHERE io.occurred_at >= ? AND io.occurred_at <= ?
+        AND i.currency = ?
+        AND i.is_active = 1
+        AND io.is_confirmed = 0`,
     startDate,
     endDate,
     currency,
@@ -130,6 +148,7 @@ export async function getQuincenaBudget(
     quincena,
     expenseProvisions,
     otherCurrenciesPresent: otherRows.map((r) => r.currency),
+    pendingIncome: pendingRow?.total ?? 0,
   };
 }
 
