@@ -19,7 +19,7 @@ interface Props {
 /** Fila de meta en el desglose, con check para marcar "ya aparté esta cuota". */
 export function GoalCheckRow({ goal, viewCurrency, rate, onToggle }: Props) {
   const quota = goal.quincena_quota_cents; // en la moneda de la meta
-  const done = quota > 0 && goal.contributed_this_quincena >= quota;
+  const done = goal.contributed_this_quincena > 0; // ya aportó algo esta quincena
   const converted = convertCents(quota, goal.currency, viewCurrency, rate);
   const isOther = goal.currency !== viewCurrency;
 
@@ -36,7 +36,7 @@ export function GoalCheckRow({ goal, viewCurrency, rate, onToggle }: Props) {
   }
 
   const subtitle = done
-    ? '✓ apartado esta quincena'
+    ? `✓ aportaste ${formatCents(goal.contributed_this_quincena, { currency: goal.currency })} esta quincena`
     : isOther
       ? `Tocá para apartar · ≈ de ${formatCents(quota, { currency: goal.currency })}`
       : 'Tocá para marcar que ya lo apartaste';

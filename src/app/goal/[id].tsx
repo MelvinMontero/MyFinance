@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { PiggyBank, Trash2 } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,6 +9,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -21,8 +22,8 @@ import {
   type GoalWithPlan,
 } from '@/features/goals/repository';
 import type { GoalFormValues } from '@/features/goals/schemas';
-import { isSupportedCurrency } from '@/shared/utils/currency';
-import { fromCents, formatCents } from '@/shared/utils/money';
+import { currencySymbol, isSupportedCurrency } from '@/shared/utils/currency';
+import { fromCents, formatCents, parseAmount, toCents } from '@/shared/utils/money';
 
 type Status = 'loading' | 'ready' | 'error' | 'notfound';
 
@@ -32,6 +33,7 @@ export default function GoalDetailScreen() {
   const [status, setStatus] = useState<Status>('loading');
   const [goal, setGoal] = useState<GoalWithPlan | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [abonoText, setAbonoText] = useState('');
 
   const reload = useCallback(async () => {
     if (!id) return;
@@ -80,27 +82,26 @@ export default function GoalDetailScreen() {
     }
   }
 
-  function confirmContribute() {
-    if (!goal || goal.quincena_quota_cents <= 0) return;
-    const amount = goal.quincena_quota_cents;
-    Alert.alert(
-      'Apartar cuota',
-      `¿Registrar un aporte de ${formatCents(amount, { currency: goal.currency })} a "${goal.name}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Apartar',
-          onPress: async () => {
-            try {
-              await addContribution(id!, amount);
-              await reload();
-            } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : String(err));
-            }
-          },
-        },
-      ],
-    );
+  async function handleAbono() {
+    if (!goal || !id) return;
+    let cents: number;
+    try {
+      cents = toCents(parseAmount(abonoText));
+    } catch {
+      Alert.alert('Monto inválido', 'Ingresá un monto válido para el abono.');
+      return;
+    }
+    if (cents <= 0) {
+      Alert.alert('Monto inválido', 'El abono debe ser mayor que cero.');
+      return;
+    }
+    try {
+      await addContribution(id, cents);
+      setAbonoText('');
+      await reload();
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : String(err));
+    }
   }
 
   function confirmDelete() {
@@ -171,26 +172,65 @@ export default function GoalDetailScreen() {
               style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
             />
           </View>
+          <Text className="mt-2 text-sm font-medium text-emerald-800 dark:text-emerald-200">
+            Te faltan {formatCents(goal.plan.remainingCents, { currency: goal.currency })}
+          </Text>
           {!goal.plan.isComplete && (
-            <Text className="mt-3 text-sm font-medium text-emerald-800 dark:text-emerald-200">
+            <Text className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
               Cuota sugerida: {formatCents(goal.quincena_quota_cents, { currency: goal.currency })} por quincena ·
               faltan {goal.plan.remainingQuincenas}
             </Text>
           )}
+          {goal.contributed_this_quincena > 0 && (
+            <Text className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+              Aportado esta quincena: {formatCents(goal.contributed_this_quincena, { currency: goal.currency })}
+            </Text>
+          )}
         </View>
 
-        {/* APARTAR CUOTA */}
-        {!goal.plan.isComplete && goal.quincena_quota_cents > 0 && (
-          <Pressable
-            onPress={confirmContribute}
-            accessibilityRole="button"
-            className="mt-4 flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 active:bg-emerald-700"
-          >
-            <PiggyBank size={20} color="#fff" strokeWidth={2} />
-            <Text className="text-base font-bold text-white">
-              Apartar {formatCents(goal.quincena_quota_cents, { currency: goal.currency })} esta quincena
+        {/* REGISTRAR ABONO */}
+        {!goal.plan.isComplete && (
+          <View className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 p-4">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+              Registrar abono
             </Text>
-          </Pressable>
+            <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Apartá la cuota sugerida o el monto que quieras. Se rebaja del total de la meta.
+            </Text>
+            <View className="mt-3 flex-row items-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3">
+              <Text className="mr-2 text-2xl font-semibold text-gray-400 dark:text-gray-500">
+                {currencySymbol(goal.currency)}
+              </Text>
+              <TextInput
+                className="flex-1 text-2xl font-semibold text-gray-900 dark:text-gray-100"
+                keyboardType="decimal-pad"
+                value={abonoText}
+                onChangeText={setAbonoText}
+                placeholder={goal.quincena_quota_cents > 0 ? String(fromCents(goal.quincena_quota_cents)) : '0'}
+                placeholderTextColor="#cbd5e1"
+              />
+            </View>
+            <View className="mt-3 flex-row gap-2">
+              {goal.quincena_quota_cents > 0 && (
+                <Pressable
+                  onPress={() => setAbonoText(String(fromCents(goal.quincena_quota_cents)))}
+                  accessibilityRole="button"
+                  className="items-center justify-center rounded-xl border border-gray-300 px-3 py-3 active:opacity-70 dark:border-gray-700"
+                >
+                  <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Cuota {formatCents(goal.quincena_quota_cents, { currency: goal.currency })}
+                  </Text>
+                </Pressable>
+              )}
+              <Pressable
+                onPress={handleAbono}
+                accessibilityRole="button"
+                className="flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 active:bg-emerald-700"
+              >
+                <Text className="text-base font-bold text-white">Abonar</Text>
+              </Pressable>
+            </View>
+          </View>
         )}
 
         {/* EDITAR */}

@@ -31,10 +31,7 @@ export interface GoalWithPlan extends Goal {
   saved_cents: number;
   /** Aportado en la quincena en curso (quincena_key actual). */
   contributed_this_quincena: number;
-  /**
-   * Cuota a apartar ESTA quincena, calculada SIN contar lo ya aportado en ella.
-   * Así, marcar/desmarcar el aporte no mueve la cuota ni el dinero libre.
-   */
+  /** Cuota sugerida a apartar esta quincena (= plan.perQuincenaCents, sobre el saldo real). */
   quincena_quota_cents: number;
   plan: GoalPlan;
 }
@@ -235,18 +232,11 @@ export async function listGoalsWithPlan(from: Date = new Date()): Promise<GoalWi
   return goals.map((g) => {
     const saved_cents = savedMap.get(g.id) ?? 0;
     const contributed_this_quincena = thisQMap.get(g.id) ?? 0;
-    // plan (progreso, completada, vencida) con el total ahorrado real
+    // El plan (progreso, cuota, restante) usa el ahorro REAL: cualquier abono
+    // baja el restante y recalcula la cuota al instante.
     const plan = calculateGoalPlan({
       targetCents: g.target_cents,
       savedCents: saved_cents,
-      from,
-      deadline: parseISO(g.deadline),
-    });
-    // cuota estable: calculada SIN lo aportado en esta quincena
-    const effectiveSaved = Math.max(0, saved_cents - contributed_this_quincena);
-    const stable = calculateGoalPlan({
-      targetCents: g.target_cents,
-      savedCents: effectiveSaved,
       from,
       deadline: parseISO(g.deadline),
     });
@@ -254,7 +244,7 @@ export async function listGoalsWithPlan(from: Date = new Date()): Promise<GoalWi
       ...g,
       saved_cents,
       contributed_this_quincena,
-      quincena_quota_cents: stable.perQuincenaCents,
+      quincena_quota_cents: plan.perQuincenaCents,
       plan,
     };
   });
@@ -268,17 +258,11 @@ export async function getGoalWithPlan(
   const g = await getGoal(id);
   if (!g) return null;
   const saved_cents = await getGoalSaved(id);
-  const contributed_this_quincena = (await getThisQuincenaMap(quincenaKey(getQuincena(from)))).get(id) ?? 0;
+  const contributed_this_quincena =
+    (await getThisQuincenaMap(quincenaKey(getQuincena(from)))).get(id) ?? 0;
   const plan = calculateGoalPlan({
     targetCents: g.target_cents,
     savedCents: saved_cents,
-    from,
-    deadline: parseISO(g.deadline),
-  });
-  const effectiveSaved = Math.max(0, saved_cents - contributed_this_quincena);
-  const stable = calculateGoalPlan({
-    targetCents: g.target_cents,
-    savedCents: effectiveSaved,
     from,
     deadline: parseISO(g.deadline),
   });
@@ -286,7 +270,7 @@ export async function getGoalWithPlan(
     ...g,
     saved_cents,
     contributed_this_quincena,
-    quincena_quota_cents: stable.perQuincenaCents,
+    quincena_quota_cents: plan.perQuincenaCents,
     plan,
   };
 }
