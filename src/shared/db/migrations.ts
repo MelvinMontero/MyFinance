@@ -159,4 +159,11 @@ export const migrations: Migration[] = [
       ALTER TABLE settings ADD COLUMN notify_days_before INTEGER NOT NULL DEFAULT 2;
     `,
   },
+  {
+    version: 6,
+    description: 'tasa de cambio aproximada CRC por USD para convertir metas/gastos',
+    sql: `
+      ALTER TABLE settings ADD COLUMN usd_to_crc_rate REAL NOT NULL DEFAULT 510;
+    `,
+  },
 ];

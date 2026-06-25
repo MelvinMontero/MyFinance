@@ -6,6 +6,7 @@ import {
   ScrollView,
   Switch,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,6 +43,7 @@ export default function SettingsScreen() {
   const notificationsEnabled = useSettings((s) => s.notifications_enabled);
   const paydayOffsetDays = useSettings((s) => s.payday_offset_days);
   const notifyDaysBefore = useSettings((s) => s.notify_days_before);
+  const usdRate = useSettings((s) => s.usd_to_crc_rate);
 
   const setSavingsPercent = useSettings((s) => s.setSavingsPercent);
   const setCurrency = useSettings((s) => s.setCurrency);
@@ -50,11 +52,13 @@ export default function SettingsScreen() {
   const setNotificationsEnabled = useSettings((s) => s.setNotificationsEnabled);
   const setPaydayOffsetDays = useSettings((s) => s.setPaydayOffsetDays);
   const setNotifyDaysBefore = useSettings((s) => s.setNotifyDaysBefore);
+  const setUsdToCrcRate = useSettings((s) => s.setUsdToCrcRate);
   const loadSettings = useSettings((s) => s.load);
 
   const [draftPct, setDraftPct] = useState(savingsPercent);
   const [draftOffset, setDraftOffset] = useState(paydayOffsetDays);
   const [draftNotify, setDraftNotify] = useState(notifyDaysBefore);
+  const [draftRate, setDraftRate] = useState(String(usdRate));
   const [busy, setBusy] = useState<null | 'export' | 'import' | 'notif' | 'bio'>(null);
 
   useEffect(() => {
@@ -68,6 +72,23 @@ export default function SettingsScreen() {
   useEffect(() => {
     setDraftNotify(notifyDaysBefore);
   }, [notifyDaysBefore]);
+
+  useEffect(() => {
+    setDraftRate(String(usdRate));
+  }, [usdRate]);
+
+  async function handleRateSave() {
+    const n = parseFloat(draftRate.replace(',', '.'));
+    if (!Number.isFinite(n)) {
+      setDraftRate(String(usdRate));
+      return;
+    }
+    try {
+      await setUsdToCrcRate(n);
+    } catch (e) {
+      Alert.alert('Error al guardar', e instanceof Error ? e.message : String(e));
+    }
+  }
 
   async function handlePctRelease(value: number) {
     const rounded = Math.round(value);
@@ -389,6 +410,28 @@ export default function SettingsScreen() {
                 </Pressable>
               );
             })}
+          </View>
+        </Section>
+
+        {/* CONVERSIÓN DE MONEDA */}
+        <Section title="Conversión de moneda (aprox.)">
+          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+            Tasa aproximada para convertir metas o gastos en dólares a colones (y al revés).
+            Ajustala al tipo de cambio actual.
+          </Text>
+          <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-950">
+            <Text className="mr-2 text-2xl font-semibold text-gray-400 dark:text-gray-500">₡</Text>
+            <TextInput
+              className="flex-1 text-2xl font-semibold text-gray-900 dark:text-gray-100"
+              keyboardType="decimal-pad"
+              value={draftRate}
+              onChangeText={setDraftRate}
+              onEndEditing={handleRateSave}
+              onBlur={handleRateSave}
+              placeholder="510"
+              placeholderTextColor="#cbd5e1"
+            />
+            <Text className="ml-2 text-base text-gray-500 dark:text-gray-400">por $1</Text>
           </View>
         </Section>
 

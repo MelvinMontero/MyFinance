@@ -52,6 +52,7 @@ export interface UpdateSettingsInput {
   onboarding_completed?: boolean;
   payday_offset_days?: number;
   notify_days_before?: number;
+  usd_to_crc_rate?: number;
 }
 
 /**
@@ -93,6 +94,10 @@ export async function updateSettings(patch: UpdateSettingsInput): Promise<void> 
   if (patch.notify_days_before !== undefined) {
     sets.push('notify_days_before = ?');
     args.push(patch.notify_days_before);
+  }
+  if (patch.usd_to_crc_rate !== undefined) {
+    sets.push('usd_to_crc_rate = ?');
+    args.push(patch.usd_to_crc_rate);
   }
   if (sets.length === 0) return;
 

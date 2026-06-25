@@ -12,6 +12,7 @@ export interface SettingsState {
   onboarding_completed: boolean;
   payday_offset_days: number;
   notify_days_before: number;
+  usd_to_crc_rate: number;
   loaded: boolean;
 
   /** Carga inicial desde DB. Idempotente. */
@@ -24,6 +25,7 @@ export interface SettingsState {
   setOnboardingCompleted: (completed: boolean) => Promise<void>;
   setPaydayOffsetDays: (days: number) => Promise<void>;
   setNotifyDaysBefore: (days: number) => Promise<void>;
+  setUsdToCrcRate: (rate: number) => Promise<void>;
 }
 
 /**
@@ -39,6 +41,7 @@ export const useSettings = create<SettingsState>((set) => ({
   onboarding_completed: false,
   payday_offset_days: 0,
   notify_days_before: 2,
+  usd_to_crc_rate: 510,
   loaded: false,
 
   load: async () => {
@@ -53,6 +56,7 @@ export const useSettings = create<SettingsState>((set) => ({
         onboarding_completed: row.onboarding_completed === 1,
         payday_offset_days: row.payday_offset_days,
         notify_days_before: row.notify_days_before,
+        usd_to_crc_rate: row.usd_to_crc_rate,
         loaded: true,
       });
     } else {
@@ -101,5 +105,12 @@ export const useSettings = create<SettingsState>((set) => ({
     const clamped = Math.max(0, Math.min(14, Math.round(days)));
     await updateSettings({ notify_days_before: clamped });
     set({ notify_days_before: clamped });
+  },
+
+  setUsdToCrcRate: async (rate) => {
+    // Tasa razonable: ₡1 a ₡5000 por $1. Evita 0/negativos/NaN.
+    const safe = Number.isFinite(rate) ? Math.max(1, Math.min(5000, rate)) : 510;
+    await updateSettings({ usd_to_crc_rate: safe });
+    set({ usd_to_crc_rate: safe });
   },
 }));

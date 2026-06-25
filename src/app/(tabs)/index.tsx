@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BreakdownModal } from '@/features/budgets/BreakdownModal';
 import { BucketCard } from '@/features/budgets/BucketCard';
 import { ProvisionRow } from '@/features/budgets/ProvisionRow';
 import { getBudgetForPeriod, type BudgetForPeriod } from '@/features/budgets/repository';
@@ -23,6 +24,7 @@ import {
 import { useSettings } from '@/features/settings/store';
 import { initDb } from '@/shared/db';
 import type { GoalPriority } from '@/shared/db/types';
+import { convertCents } from '@/shared/utils/exchange';
 import { formatCents } from '@/shared/utils/money';
 
 type Status = 'loading' | 'ready' | 'error';
@@ -42,9 +44,11 @@ export default function HomeScreen() {
   const [status, setStatus] = useState<Status>('loading');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [data, setData] = useState<HomeData | null>(null);
+  const [breakdownVisible, setBreakdownVisible] = useState(false);
 
   const liveCurrency = useSettings((s) => s.currency);
   const liveSavingsPercent = useSettings((s) => s.savings_percent);
+  const liveRate = useSettings((s) => s.usd_to_crc_rate);
 
   const loadData = useCallback(
     async (showLoading: boolean) => {
@@ -56,16 +60,24 @@ export default function HomeScreen() {
         const today = new Date();
         const quincena = getQuincena(today);
 
-        // Mostramos TODAS las metas en el Inicio (como la pestaña Metas). La
-        // reserva que afecta los sobres cuenta solo las de la moneda activa
-        // (no se puede sumar CRC + USD).
+        // Mostramos TODAS las metas en el Inicio. Las que están en otra moneda
+        // se convierten a la moneda activa con la tasa aproximada (₡/$), para
+        // que entren en la reserva y en el desglose.
         const goals = await listGoalsWithPlan(today);
-        const goalsInCurrency = goals.filter((g) => g.currency === liveCurrency);
-        // Reserva quincenal = 1 cuota; reserva mensual ≈ las cuotas de las quincenas
-        // del mes (hasta 2), para que la vista Mensual también refleje las metas.
-        const goalsReserve = goalsInCurrency.reduce((sum, g) => sum + g.plan.perQuincenaCents, 0);
-        const monthlyGoalsReserve = goalsInCurrency.reduce(
-          (sum, g) => sum + g.plan.perQuincenaCents * monthlyQuotaFactor(g),
+        const goalsReserve = goals.reduce(
+          (sum, g) => sum + convertCents(g.plan.perQuincenaCents, g.currency, liveCurrency, liveRate),
+          0,
+        );
+        // Reserva mensual ≈ las cuotas de las quincenas del mes (hasta 2).
+        const monthlyGoalsReserve = goals.reduce(
+          (sum, g) =>
+            sum +
+            convertCents(
+              g.plan.perQuincenaCents * monthlyQuotaFactor(g),
+              g.currency,
+              liveCurrency,
+              liveRate,
+            ),
           0,
         );
 
@@ -82,7 +94,7 @@ export default function HomeScreen() {
         setStatus('error');
       }
     },
-    [liveCurrency, liveSavingsPercent],
+    [liveCurrency, liveSavingsPercent, liveRate],
   );
 
   useFocusEffect(
@@ -96,6 +108,8 @@ export default function HomeScreen() {
       try {
         await setOccurrenceConfirmed(id, confirmed);
         await loadData(false); // refresca sin spinner: el dinero entra/sale de los sobres
+        // Al CONFIRMAR (marcar como recibido) mostramos el desglose de cuánto reservar.
+        if (confirmed) setBreakdownVisible(true);
       } catch (err) {
         Alert.alert('Error', err instanceof Error ? err.message : String(err));
       }
@@ -152,6 +166,7 @@ export default function HomeScreen() {
             occurrences={data.occurrences}
             currency={liveCurrency}
             savingsPercent={liveSavingsPercent}
+            rate={liveRate}
             paymentSummary={data.paymentSummary}
             onConfirm={handleConfirmOccurrence}
           />
@@ -201,6 +216,15 @@ export default function HomeScreen() {
           <Plus size={28} color="#fff" strokeWidth={2.5} />
         </Pressable>
       )}
+
+      <BreakdownModal
+        visible={breakdownVisible}
+        onClose={() => setBreakdownVisible(false)}
+        quincena={data.quincena}
+        goals={data.goals}
+        currency={liveCurrency}
+        rate={liveRate}
+      />
     </SafeAreaView>
   );
 }
@@ -216,6 +240,7 @@ function BucketsBlock({
   occurrences,
   currency,
   savingsPercent,
+  rate,
   paymentSummary,
   onConfirm,
 }: {
@@ -225,6 +250,7 @@ function BucketsBlock({
   occurrences: OccurrenceWithSource[];
   currency: string;
   savingsPercent: number;
+  rate: number;
   paymentSummary: { paid: number; total: number };
   onConfirm: (id: string, confirmed: boolean) => void;
 }) {
@@ -264,6 +290,7 @@ function BucketsBlock({
           goals={goals}
           currency={currency}
           savingsPercent={savingsPercent}
+          rate={rate}
           paymentSummary={paymentSummary}
         />
       ) : (
@@ -273,6 +300,7 @@ function BucketsBlock({
           occurrences={occurrences}
           currency={currency}
           savingsPercent={savingsPercent}
+          rate={rate}
           onConfirm={onConfirm}
         />
       )}
@@ -286,12 +314,14 @@ function MonthlyView({
   goals,
   currency,
   savingsPercent,
+  rate,
   paymentSummary,
 }: {
   budget: BudgetForPeriod;
   goals: GoalWithPlan[];
   currency: string;
   savingsPercent: number;
+  rate: number;
   paymentSummary: { paid: number; total: number };
 }) {
   const subtitleFreeMoney = budget.isOverspent
@@ -401,8 +431,13 @@ function MonthlyView({
             <ProvisionRow
               key={g.id}
               label={g.name}
-              amountCents={g.plan.perQuincenaCents * monthlyQuotaFactor(g)}
-              currency={g.currency}
+              amountCents={convertCents(
+                g.plan.perQuincenaCents * monthlyQuotaFactor(g),
+                g.currency,
+                currency,
+                rate,
+              )}
+              currency={currency}
               subtitle={goalSubtitle(g, currency)}
             />
           ))}
@@ -419,6 +454,7 @@ function QuincenaView({
   occurrences,
   currency,
   savingsPercent,
+  rate,
   onConfirm,
 }: {
   quincena: QuincenaBudget;
@@ -426,6 +462,7 @@ function QuincenaView({
   occurrences: OccurrenceWithSource[];
   currency: string;
   savingsPercent: number;
+  rate: number;
   onConfirm: (id: string, confirmed: boolean) => void;
 }) {
   const { startDate, endDate } = quincena.quincena;
@@ -577,8 +614,8 @@ function QuincenaView({
           <ProvisionRow
             key={`g-${g.id}`}
             label={g.name}
-            amountCents={g.plan.perQuincenaCents}
-            currency={g.currency}
+            amountCents={convertCents(g.plan.perQuincenaCents, g.currency, currency, rate)}
+            currency={currency}
             subtitle={goalSubtitle(g, currency)}
           />
         ))}
@@ -622,7 +659,7 @@ function goalSubtitle(g: GoalWithPlan, viewCurrency: string): string {
       ? `${PRIORITY_LABEL[g.priority]} · fecha vencida`
       : `${PRIORITY_LABEL[g.priority]} · faltan ${g.plan.remainingQuincenas} quincenas`;
   return g.currency !== viewCurrency
-    ? `${base} · en ${g.currency} (no entra en este presupuesto)`
+    ? `${base} · ≈ de ${formatCents(g.plan.perQuincenaCents, { currency: g.currency })}`
     : base;
 }
 

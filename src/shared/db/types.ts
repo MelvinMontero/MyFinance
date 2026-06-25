@@ -17,6 +17,7 @@ export interface Settings {
   onboarding_completed: SqliteBoolean;
   payday_offset_days: number; // colchón financiero — migración v5
   notify_days_before: number; // días de anticipación de avisos — migración v5
+  usd_to_crc_rate: number; // tasa aproximada ₡ por $1 — migración v6
   created_at: string;
   updated_at: string;
 }

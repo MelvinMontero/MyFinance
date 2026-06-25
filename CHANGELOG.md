@@ -4,6 +4,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 
 ## [Unreleased]
 
+### Added
+- **Ventana de desglose al confirmar el salario.** Al marcar un ingreso como recibido en el Inicio, aparece un modal con cuánto reservar para ahorro, cada gasto fijo y cada meta, más el total y lo que queda libre.
+- **Conversión aproximada USD↔CRC.** Las metas (o gastos) en otra moneda se convierten a la moneda activa con una tasa configurable en Ajustes (`settings.usd_to_crc_rate`, migración v6, default ₡510/$). El sobre Metas y el desglose ya cuentan las metas en dólares al cambio.
+
 ### Changed
 - **Los presupuestos cuentan solo el ingreso CONFIRMADO.** Lo proyectado pero no recibido ya no infla los sobres; se muestra aparte como "por confirmar". El check de ingreso (que ya existía en el detalle) ahora también está en el Inicio (tarjeta "Ingresos de esta quincena") para marcar de un toque lo que ya te pagaron.
 - **El Inicio abre en la vista Quincenal** (era Mensual) y la vista **Mensual también refleja las Metas** (sobre Metas + desglose de cuotas del mes). Antes las metas solo se veían en la vista quincenal.
