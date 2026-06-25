@@ -10,8 +10,9 @@
  */
 import { parseISO } from 'date-fns';
 
+import { getQuincena, type Quincena } from '@/features/cycle/cycle';
 import { monthlyExpenseProvision } from '@/features/cycle/expense';
-import type { Quincena } from '@/features/cycle/cycle';
+import { getGoalsReserve } from '@/features/goals/repository';
 import { getDb } from '@/shared/db';
 
 import { calculateBuckets, type BucketBreakdown } from './calculate';
@@ -130,4 +131,19 @@ export async function getQuincenaBudget(
     expenseProvisions,
     otherCurrenciesPresent: otherRows.map((r) => r.currency),
   };
+}
+
+/**
+ * Sobregasto de la quincena en curso para `currency`: centavos por encima del
+ * dinero libre (0 si no hay sobregasto). Útil tras registrar un gasto real.
+ */
+export async function getCurrentQuincenaOverspendCents(
+  currency: string,
+  savingsPercent: number,
+): Promise<number> {
+  const today = new Date();
+  const quincena = getQuincena(today);
+  const goalsReserve = await getGoalsReserve(today, currency);
+  const qb = await getQuincenaBudget(quincena, currency, savingsPercent, goalsReserve);
+  return qb.isOverspent ? Math.abs(qb.freeMoneyRemaining) : 0;
 }

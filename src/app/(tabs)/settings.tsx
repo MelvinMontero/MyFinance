@@ -24,7 +24,7 @@ import { exportBackup, importBackup } from '@/features/backup/repository';
 import {
   cancelAllScheduled,
   requestNotificationPermission,
-  rescheduleFixedExpenseNotifications,
+  rescheduleAllNotifications,
 } from '@/features/notifications/scheduler';
 import { useSettings } from '@/features/settings/store';
 import type { ThemePreference } from '@/shared/db/types';
@@ -159,13 +159,13 @@ export default function SettingsScreen() {
           );
           return;
         }
-        const count = await rescheduleFixedExpenseNotifications(currency);
+        const count = await rescheduleAllNotifications(currency, notifyDaysBefore);
         await setNotificationsEnabled(true);
         Alert.alert(
           'Notificaciones activadas',
           count === 0
-            ? 'Por ahora no hay gastos fijos próximos. Cuando agregués alguno, te recordaré 3 días antes y el día mismo.'
-            : `Programé ${count} ${count === 1 ? 'recordatorio' : 'recordatorios'}.`,
+            ? `Cuando agregués gastos o metas te avisaré ${notifyDaysBefore} día(s) antes, el día de pago y en la cuenta regresiva de tus metas.`
+            : `Programé ${count} ${count === 1 ? 'recordatorio' : 'recordatorios'} (pagos, gastos y metas).`,
         );
       } else {
         await cancelAllScheduled();

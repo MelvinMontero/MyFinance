@@ -8,12 +8,14 @@ import {
   View,
 } from 'react-native';
 
+import { getCurrentQuincenaOverspendCents } from '@/features/budgets/quincena';
+import { notifyOverspendNow } from '@/features/notifications/scheduler';
 import { useSettings } from '@/features/settings/store';
 import { VariableExpenseForm } from '@/features/variable-expenses/VariableExpenseForm';
 import { createVariableExpense } from '@/features/variable-expenses/repository';
 import type { VariableExpenseFormValues } from '@/features/variable-expenses/schemas';
 import { isSupportedCurrency } from '@/shared/utils/currency';
-import { toCents } from '@/shared/utils/money';
+import { formatCents, toCents } from '@/shared/utils/money';
 
 export default function NewVariableExpenseScreen() {
   const router = useRouter();
@@ -31,6 +33,24 @@ export default function NewVariableExpenseScreen() {
         occurred_at: values.occurred_at,
         note: values.note?.trim() ? values.note.trim() : null,
       });
+
+      // Alerta de sobregasto: ¿este gasto te pasó del dinero libre de la quincena?
+      const savingsPercent = useSettings.getState().savings_percent;
+      const notificationsEnabled = useSettings.getState().notifications_enabled;
+      const overspent = await getCurrentQuincenaOverspendCents(values.currency, savingsPercent);
+      if (overspent > 0) {
+        if (notificationsEnabled) {
+          await notifyOverspendNow(overspent, values.currency).catch(() => {
+            /* la notificación es best-effort */
+          });
+        }
+        Alert.alert(
+          'Cuidado: sobregasto',
+          `Vas ${formatCents(overspent, { currency: values.currency })} por encima de tu dinero libre de esta quincena.`,
+          [{ text: 'Entendido', onPress: () => router.back() }],
+        );
+        return;
+      }
       router.back();
     } catch (err) {
       Alert.alert(

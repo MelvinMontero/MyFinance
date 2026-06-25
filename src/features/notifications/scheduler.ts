@@ -1,20 +1,25 @@
-import { addDays, getDaysInMonth, set } from 'date-fns';
+import { parseISO } from 'date-fns';
 import * as Notifications from 'expo-notifications';
 
 import { listFixedExpenses } from '@/features/fixed-expenses/repository';
+import { listGoals } from '@/features/goals/repository';
 import { formatCents } from '@/shared/utils/money';
 
-/**
- * Días de aviso antes del vencimiento. Se programan 2 notificaciones por
- * cada gasto fijo activo: una 3 días antes a las 9am, otra el día mismo a las 9am.
- */
-const ALERT_DAYS_BEFORE = [3, 0];
+import {
+  buildExpenseReminders,
+  buildGoalCountdown,
+  buildPaydayReminders,
+  type PlannedNotification,
+} from './plan';
 
-const CHANNEL_ID = 'fixed-expenses';
+const CHANNEL_ID = 'finance';
+
+/** Cuántas quincenas hacia adelante se programan recordatorios de día de pago. */
+const PAYDAY_WINDOW = 8;
 
 /**
  * Configura el handler global de notificaciones. Llamarlo una sola vez al
- * arranque de la app (en el root layout o un boot effect).
+ * arranque de la app (root layout).
  */
 export function setupNotificationHandler(): void {
   Notifications.setNotificationHandler({
@@ -36,98 +41,80 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 async function ensureChannel(): Promise<void> {
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: 'Gastos fijos',
+    name: 'Recordatorios de finanzas',
     importance: Notifications.AndroidImportance.DEFAULT,
     enableVibrate: true,
   });
 }
 
-/**
- * Borra TODAS las notificaciones programadas. Útil al desactivar el toggle
- * o antes de re-programar.
- */
+/** Borra TODAS las notificaciones programadas. */
 export async function cancelAllScheduled(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 /**
- * Programa notificaciones para los gastos fijos activos en la moneda dada.
- * Primero cancela todo lo que había, después programa fresco.
+ * Reprograma TODAS las notificaciones locales: día de pago, gastos fijos por
+ * vencer y cuenta regresiva de metas. Primero cancela lo previo.
  *
- * Para cada expense: una notificación 3 días antes del due_day del mes
- * siguiente (o este mes si todavía no ha pasado) y otra el día mismo.
- * Solo se programan los AVISOS PRÓXIMOS (no se llena la cola por todo el año).
+ * Las notificaciones con fecha absoluta no se repiten solas; por eso se
+ * reprograma una ventana (PAYDAY_WINDOW quincenas + hitos) cada vez que cambian
+ * los datos o se abre la app.
  */
-export async function rescheduleFixedExpenseNotifications(currency: string): Promise<number> {
+export async function rescheduleAllNotifications(
+  currency: string,
+  notifyDaysBefore: number,
+): Promise<number> {
   await ensureChannel();
   await cancelAllScheduled();
 
-  const expenses = await listFixedExpenses({ active: true });
-  const inCurrency = expenses.filter((e) => e.currency === currency);
-  if (inCurrency.length === 0) return 0;
-
-  let scheduled = 0;
   const now = new Date();
 
-  for (const exp of inCurrency) {
-    // Calcular el próximo "due date" basado en due_day y la fecha actual.
-    const next = nextDueDate(now, exp.due_day);
+  const expenses = (await listFixedExpenses({ active: true }))
+    .filter((e) => e.currency === currency)
+    .map((e) => ({
+      id: e.id,
+      name: e.name,
+      amount_cents: e.amount_cents,
+      currency: e.currency,
+      due_day: e.due_day,
+    }));
 
-    for (const daysBefore of ALERT_DAYS_BEFORE) {
-      const fireAt = set(addDays(next, -daysBefore), {
-        hours: 9,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
-      if (fireAt.getTime() <= now.getTime()) continue; // ya pasó
+  const goals = (await listGoals({ active: true }))
+    .filter((g) => g.currency === currency)
+    .map((g) => ({ id: g.id, name: g.name, deadline: parseISO(g.deadline) }));
 
-      const title =
-        daysBefore === 0
-          ? `Hoy se vence ${exp.name}`
-          : `Faltan ${daysBefore} días: ${exp.name}`;
-      const body = `${formatCents(exp.amount_cents, { currency: exp.currency })} · día ${exp.due_day}`;
+  const planned: PlannedNotification[] = [
+    ...buildPaydayReminders(now, PAYDAY_WINDOW),
+    ...buildExpenseReminders(expenses, now, notifyDaysBefore),
+    ...buildGoalCountdown(goals, now),
+  ];
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          data: { fixed_expense_id: exp.id },
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: fireAt,
-          channelId: CHANNEL_ID,
-        },
-      });
-      scheduled++;
-    }
+  for (const p of planned) {
+    await Notifications.scheduleNotificationAsync({
+      content: { title: p.title, body: p.body, data: { key: p.key } },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: p.date,
+        channelId: CHANNEL_ID,
+      },
+    });
   }
 
-  return scheduled;
+  return planned.length;
 }
 
 /**
- * Calcula el próximo due date dada la fecha actual y el day-of-month.
- * Si el due_day de este mes ya pasó, devuelve el del mes siguiente.
- * Si el mes no tiene ese día (ej. day=31 en febrero), clampa al último día.
+ * Dispara una notificación inmediata de sobregasto. Se llama cuando, al registrar
+ * un gasto real, los gastos del período superan el dinero libre disponible.
  */
-function nextDueDate(from: Date, dueDay: number): Date {
-  const thisMonth = new Date(from.getFullYear(), from.getMonth(), 1);
-  const dimThis = getDaysInMonth(thisMonth);
-  const clampedThis = Math.min(dueDay, dimThis);
-  const candidateThis = new Date(from.getFullYear(), from.getMonth(), clampedThis);
-
-  if (candidateThis.getTime() >= startOfDay(from).getTime()) {
-    return candidateThis;
-  }
-
-  const nextMonth = new Date(from.getFullYear(), from.getMonth() + 1, 1);
-  const dimNext = getDaysInMonth(nextMonth);
-  const clampedNext = Math.min(dueDay, dimNext);
-  return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampedNext);
-}
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+export async function notifyOverspendNow(overspentCents: number, currency: string): Promise<void> {
+  await ensureChannel();
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Te pasaste del presupuesto ⚠️',
+      body: `Vas ${formatCents(overspentCents, { currency })} por encima de tu dinero libre de esta quincena.`,
+      data: { key: 'overspend' },
+    },
+    trigger: null, // inmediata
+  });
 }

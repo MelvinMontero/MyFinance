@@ -8,7 +8,10 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { setupNotificationHandler } from '@/features/notifications/scheduler';
+import {
+  rescheduleAllNotifications,
+  setupNotificationHandler,
+} from '@/features/notifications/scheduler';
 import { useSettings } from '@/features/settings/store';
 import { initDb } from '@/shared/db';
 
@@ -37,6 +40,12 @@ function RootContent() {
         await initDb();
         await useSettings.getState().load();
         setupNotificationHandler();
+        // Reprograma la ventana de avisos al abrir (las notifs con fecha absoluta
+        // no se repiten solas). Best-effort: no bloquea el arranque si falla.
+        const s = useSettings.getState();
+        if (s.notifications_enabled) {
+          await rescheduleAllNotifications(s.currency, s.notify_days_before).catch(() => {});
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       }
