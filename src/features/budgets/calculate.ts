@@ -5,12 +5,12 @@
  *
  * Algoritmo del spec:
  *   savings    = round(income × savings_percent / 100)
- *   free_money = income − savings − fixed_expenses
+ *   free_money = income − savings − goalsReserve − fixed_expenses
  *   remaining  = free_money − variable_expenses
  *
  * Todos los montos viven como CENTAVOS ENTEROS (Math.round). Esto evita
  * errores de coma flotante al sumar. La identidad
- *   income = savings + free_money + fixed_expenses
+ *   income = savings + goalsReserve + fixed_expenses + free_money
  * se mantiene por construcción.
  */
 
@@ -23,6 +23,8 @@ export interface CalculateBucketsInput {
   fixedExpensesAmount: number;
   /** Total ya gastado en gastos variables del período, centavos enteros ≥ 0. */
   variableExpensesAmount: number;
+  /** Reserva sugerida para metas de ahorro este período, centavos ≥ 0. Default 0. */
+  goalsReserveAmount?: number;
 }
 
 export interface BucketBreakdown {
@@ -30,9 +32,11 @@ export interface BucketBreakdown {
   income: number;
   /** Reservado para el sobre de ahorro (round(income × pct / 100)). */
   savings: number;
+  /** Reservado para metas de ahorro de largo plazo (suma de cuotas quincenales). */
+  goalsReserve: number;
   /** Total de gastos fijos del período. */
   fixedExpenses: number;
-  /** Dinero libre disponible = income − savings − fixedExpenses. Puede ser negativo. */
+  /** Dinero libre disponible = income − savings − goalsReserve − fixedExpenses. Puede ser negativo. */
   freeMoney: number;
   /** Ya gastado del dinero libre. */
   variableExpensesSpent: number;
@@ -45,20 +49,28 @@ export interface BucketBreakdown {
 }
 
 export function calculateBuckets(input: CalculateBucketsInput): BucketBreakdown {
-  const { incomeAmount, savingsPercent, fixedExpensesAmount, variableExpensesAmount } = input;
+  const {
+    incomeAmount,
+    savingsPercent,
+    fixedExpensesAmount,
+    variableExpensesAmount,
+    goalsReserveAmount = 0,
+  } = input;
 
   assertNonNegativeFinite(incomeAmount, 'incomeAmount');
   assertNonNegativeFinite(fixedExpensesAmount, 'fixedExpensesAmount');
   assertNonNegativeFinite(variableExpensesAmount, 'variableExpensesAmount');
+  assertNonNegativeFinite(goalsReserveAmount, 'goalsReserveAmount');
   assertPercentInRange(savingsPercent);
 
   const savings = Math.round((incomeAmount * savingsPercent) / 100);
-  const freeMoney = incomeAmount - savings - fixedExpensesAmount;
+  const freeMoney = incomeAmount - savings - goalsReserveAmount - fixedExpensesAmount;
   const freeMoneyRemaining = freeMoney - variableExpensesAmount;
 
   return {
     income: incomeAmount,
     savings,
+    goalsReserve: goalsReserveAmount,
     fixedExpenses: fixedExpensesAmount,
     freeMoney,
     variableExpensesSpent: variableExpensesAmount,

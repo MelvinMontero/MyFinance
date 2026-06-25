@@ -224,3 +224,58 @@ describe('calculateBuckets — el escenario de la docu', () => {
     expect(r.isOverBudget).toBe(false);
   });
 });
+
+describe('calculateBuckets — sobre Metas (goalsReserveAmount)', () => {
+  it('resta la reserva de metas del dinero libre', () => {
+    // income=500k, ahorro 20%=100k, fijos=200k, metas=50k → libre=150k
+    const r = calculateBuckets(
+      buildInput({
+        incomeAmount: 500_000,
+        savingsPercent: 20,
+        fixedExpensesAmount: 200_000,
+        goalsReserveAmount: 50_000,
+      }),
+    );
+    expect(r.savings).toBe(100_000);
+    expect(r.goalsReserve).toBe(50_000);
+    expect(r.freeMoney).toBe(150_000); // 500k - 100k - 200k - 50k
+    expect(r.isOverBudget).toBe(false);
+  });
+
+  it('goalsReserve default 0 mantiene el cálculo histórico', () => {
+    const r = calculateBuckets(
+      buildInput({ incomeAmount: 100_000, savingsPercent: 20, fixedExpensesAmount: 30_000 }),
+    );
+    expect(r.goalsReserve).toBe(0);
+    expect(r.freeMoney).toBe(50_000); // 100k - 20k - 30k - 0
+  });
+
+  it('over-budget cuando ahorro + fijos + metas superan el ingreso', () => {
+    const r = calculateBuckets(
+      buildInput({
+        incomeAmount: 100_000,
+        savingsPercent: 20,
+        fixedExpensesAmount: 60_000,
+        goalsReserveAmount: 40_000,
+      }),
+    );
+    expect(r.freeMoney).toBe(-20_000); // 100 - 20 - 60 - 40
+    expect(r.isOverBudget).toBe(true);
+  });
+
+  it('lanza si goalsReserveAmount es negativo', () => {
+    expect(() => calculateBuckets(buildInput({ goalsReserveAmount: -1 }))).toThrow();
+  });
+
+  it('mantiene la identidad income = savings + goalsReserve + fixed + freeMoney', () => {
+    const r = calculateBuckets(
+      buildInput({
+        incomeAmount: 12_345,
+        savingsPercent: 17,
+        fixedExpensesAmount: 4_321,
+        goalsReserveAmount: 1_111,
+      }),
+    );
+    expect(r.savings + r.goalsReserve + r.fixedExpenses + r.freeMoney).toBe(r.income);
+  });
+});
