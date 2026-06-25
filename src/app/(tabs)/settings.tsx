@@ -40,26 +40,60 @@ export default function SettingsScreen() {
   const theme = useSettings((s) => s.theme);
   const biometricEnabled = useSettings((s) => s.biometric_enabled);
   const notificationsEnabled = useSettings((s) => s.notifications_enabled);
+  const paydayOffsetDays = useSettings((s) => s.payday_offset_days);
+  const notifyDaysBefore = useSettings((s) => s.notify_days_before);
 
   const setSavingsPercent = useSettings((s) => s.setSavingsPercent);
   const setCurrency = useSettings((s) => s.setCurrency);
   const setTheme = useSettings((s) => s.setTheme);
   const setBiometricEnabled = useSettings((s) => s.setBiometricEnabled);
   const setNotificationsEnabled = useSettings((s) => s.setNotificationsEnabled);
+  const setPaydayOffsetDays = useSettings((s) => s.setPaydayOffsetDays);
+  const setNotifyDaysBefore = useSettings((s) => s.setNotifyDaysBefore);
   const loadSettings = useSettings((s) => s.load);
 
   const [draftPct, setDraftPct] = useState(savingsPercent);
+  const [draftOffset, setDraftOffset] = useState(paydayOffsetDays);
+  const [draftNotify, setDraftNotify] = useState(notifyDaysBefore);
   const [busy, setBusy] = useState<null | 'export' | 'import' | 'notif' | 'bio'>(null);
 
   useEffect(() => {
     setDraftPct(savingsPercent);
   }, [savingsPercent]);
 
+  useEffect(() => {
+    setDraftOffset(paydayOffsetDays);
+  }, [paydayOffsetDays]);
+
+  useEffect(() => {
+    setDraftNotify(notifyDaysBefore);
+  }, [notifyDaysBefore]);
+
   async function handlePctRelease(value: number) {
     const rounded = Math.round(value);
     setDraftPct(rounded);
     try {
       await setSavingsPercent(rounded);
+    } catch (e) {
+      Alert.alert('Error al guardar', e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleOffsetRelease(value: number) {
+    const rounded = Math.round(value);
+    setDraftOffset(rounded);
+    try {
+      await setPaydayOffsetDays(rounded);
+    } catch (e) {
+      Alert.alert('Error al guardar', e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleNotifyRelease(value: number) {
+    const rounded = Math.round(value);
+    setDraftNotify(rounded);
+    try {
+      await setNotifyDaysBefore(rounded);
     } catch (e) {
       Alert.alert('Error al guardar', e instanceof Error ? e.message : String(e));
     }
@@ -268,6 +302,36 @@ export default function SettingsScreen() {
           </View>
         </Section>
 
+        {/* COLCHÓN FINANCIERO */}
+        <Section title="Colchón financiero">
+          <View className="flex-row items-baseline">
+            <Text className="text-5xl font-bold text-emerald-700 dark:text-emerald-400">{draftOffset}</Text>
+            <Text className="ml-2 text-xl font-semibold text-emerald-700 dark:text-emerald-400">
+              {draftOffset === 1 ? 'día' : 'días'}
+            </Text>
+          </View>
+          <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Margen de holgura antes de que un gasto fijo se marque urgente. Útil si tu pago a veces
+            entra unos días tarde.
+          </Text>
+          <Slider
+            style={{ width: '100%', height: 44, marginTop: 16 }}
+            minimumValue={0}
+            maximumValue={15}
+            step={1}
+            value={paydayOffsetDays}
+            onValueChange={(v) => setDraftOffset(Math.round(v))}
+            onSlidingComplete={handleOffsetRelease}
+            minimumTrackTintColor="#059669"
+            maximumTrackTintColor="#d1d5db"
+            thumbTintColor="#059669"
+          />
+          <View className="-mt-1 flex-row justify-between">
+            <Text className="text-xs text-gray-400">0</Text>
+            <Text className="text-xs text-gray-400">15 días</Text>
+          </View>
+        </Section>
+
         {/* MONEDA POR DEFECTO */}
         <Section title="Moneda por defecto">
           <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
@@ -347,11 +411,32 @@ export default function SettingsScreen() {
             icon={Bell}
             iconColor="#2563eb"
             label="Recordatorios de gastos fijos"
-            description="Aviso 3 días antes y el día del vencimiento."
+            description={`Aviso ${draftNotify} ${draftNotify === 1 ? 'día' : 'días'} antes y el día del vencimiento.`}
             value={notificationsEnabled}
             onValueChange={handleNotificationsToggle}
             disabled={busy !== null}
           />
+          <View className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
+            <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Anticipación del aviso: {draftNotify} {draftNotify === 1 ? 'día' : 'días'}
+            </Text>
+            <Slider
+              style={{ width: '100%', height: 44, marginTop: 8 }}
+              minimumValue={0}
+              maximumValue={14}
+              step={1}
+              value={notifyDaysBefore}
+              onValueChange={(v) => setDraftNotify(Math.round(v))}
+              onSlidingComplete={handleNotifyRelease}
+              minimumTrackTintColor="#2563eb"
+              maximumTrackTintColor="#d1d5db"
+              thumbTintColor="#2563eb"
+            />
+            <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Aplica a gastos fijos y a la cuenta regresiva de tus metas. Reactivá el toggle para
+              reprogramar con el nuevo valor.
+            </Text>
+          </View>
         </Section>
 
         {/* RESPALDO */}

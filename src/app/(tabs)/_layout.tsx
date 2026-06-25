@@ -5,6 +5,7 @@ import {
   Receipt,
   Settings as SettingsIcon,
   ShoppingBag,
+  Target,
   Wallet,
 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
@@ -72,6 +73,13 @@ export default function TabsLayout() {
         options={{
           title: 'Reportes',
           tabBarIcon: ({ color, size }) => <BarChart3 color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="goals"
+        options={{
+          title: 'Metas',
+          tabBarIcon: ({ color, size }) => <Target color={color} size={size} />,
         }}
       />
       <Tabs.Screen

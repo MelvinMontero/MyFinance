@@ -154,6 +154,26 @@ function RootContent() {
           headerTintColor: headerText,
         }}
       />
+      <Stack.Screen
+        name="goal/new"
+        options={{
+          presentation: 'modal',
+          title: 'Nueva meta',
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
+        }}
+      />
+      <Stack.Screen
+        name="goal/[id]"
+        options={{
+          presentation: 'modal',
+          title: 'Meta',
+          headerStyle: { backgroundColor: headerBg },
+          headerTitleStyle: { fontWeight: '700', color: headerText },
+          headerTintColor: headerText,
+        }}
+      />
     </Stack>
   );
 }
