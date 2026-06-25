@@ -8,6 +8,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) �
 - **Los presupuestos cuentan solo el ingreso CONFIRMADO.** Lo proyectado pero no recibido ya no infla los sobres; se muestra aparte como "por confirmar". El check de ingreso (que ya existía en el detalle) ahora también está en el Inicio (tarjeta "Ingresos de esta quincena") para marcar de un toque lo que ya te pagaron.
 - **El Inicio abre en la vista Quincenal** (era Mensual) y la vista **Mensual también refleja las Metas** (sobre Metas + desglose de cuotas del mes). Antes las metas solo se veían en la vista quincenal.
 
+### Fixed
+- **Las metas ya se reflejan siempre en el Inicio.** Antes el Inicio filtraba por moneda y, si no coincidía, mostraba "sin metas activas" aunque la meta existiera. Ahora se muestran todas (la reserva que afecta los sobres sigue contando solo la moneda activa).
+- **El pago de un gasto fijo se refleja en el Inicio.** En la vista Quincenal, un fijo marcado como pagado este mes aparece como "✓ pagado" y deja de contar en el "cuánto apartar".
+- **La vista Quincenal resta los gastos extras** del disponible (antes mostraba el dinero libre sin restar lo gastado) y muestra aviso de sobregasto, igual que la Mensual.
+
 ## [0.9.0] - 2026-06-25 — Ciclo quincenal real + Metas de ahorro
 
 > Convierte el toggle "Quincenal" cosmético (dividía el mes entre 2) en un cálculo

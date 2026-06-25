@@ -56,12 +56,15 @@ export default function HomeScreen() {
         const today = new Date();
         const quincena = getQuincena(today);
 
-        const goalsAll = await listGoalsWithPlan(today);
-        const goals = goalsAll.filter((g) => g.currency === liveCurrency);
+        // Mostramos TODAS las metas en el Inicio (como la pestaña Metas). La
+        // reserva que afecta los sobres cuenta solo las de la moneda activa
+        // (no se puede sumar CRC + USD).
+        const goals = await listGoalsWithPlan(today);
+        const goalsInCurrency = goals.filter((g) => g.currency === liveCurrency);
         // Reserva quincenal = 1 cuota; reserva mensual ≈ las cuotas de las quincenas
         // del mes (hasta 2), para que la vista Mensual también refleje las metas.
-        const goalsReserve = goals.reduce((sum, g) => sum + g.plan.perQuincenaCents, 0);
-        const monthlyGoalsReserve = goals.reduce(
+        const goalsReserve = goalsInCurrency.reduce((sum, g) => sum + g.plan.perQuincenaCents, 0);
+        const monthlyGoalsReserve = goalsInCurrency.reduce(
           (sum, g) => sum + g.plan.perQuincenaCents * monthlyQuotaFactor(g),
           0,
         );
@@ -399,8 +402,8 @@ function MonthlyView({
               key={g.id}
               label={g.name}
               amountCents={g.plan.perQuincenaCents * monthlyQuotaFactor(g)}
-              currency={currency}
-              subtitle={goalSubtitle(g)}
+              currency={g.currency}
+              subtitle={goalSubtitle(g, currency)}
             />
           ))}
         </View>
@@ -471,6 +474,21 @@ function QuincenaView({
         </View>
       )}
 
+      {/* SOBREGASTO: extras superan el dinero libre */}
+      {quincena.isOverspent && !quincena.isOverBudget && (
+        <View className="mt-4 flex-row items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-4">
+          <AlertTriangle size={20} color="#d97706" strokeWidth={2} />
+          <View className="flex-1">
+            <Text className="text-sm font-bold text-amber-900 dark:text-amber-100">
+              Te pasaste del dinero libre
+            </Text>
+            <Text className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+              Gastaste {formatCents(Math.abs(quincena.freeMoneyRemaining), { currency })} de más esta quincena.
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* SOBRES de la quincena */}
       <View className="mt-6 gap-3">
         <BucketCard
@@ -505,7 +523,23 @@ function QuincenaView({
           amount={quincena.freeMoney}
           currency={currency}
           color="amber"
-          subtitle="Lo que te queda para gustos esta quincena"
+          subtitle={
+            quincena.variableExpensesSpent > 0
+              ? `Gastaste ${formatCents(quincena.variableExpensesSpent, { currency })} en extras esta quincena`
+              : 'Lo que te queda para gustos esta quincena'
+          }
+          progress={
+            quincena.freeMoney > 0
+              ? {
+                  value: quincena.variableExpensesSpent,
+                  max: quincena.freeMoney,
+                  label:
+                    quincena.variableExpensesSpent === 0
+                      ? `Quedan ${formatCents(quincena.freeMoneyRemaining, { currency })}`
+                      : `Quedan ${formatCents(quincena.freeMoneyRemaining, { currency })} de ${formatCents(quincena.freeMoney, { currency })}`,
+                }
+              : undefined
+          }
         />
       </View>
 
@@ -525,9 +559,11 @@ function QuincenaView({
             amountCents={e.amountCents}
             currency={currency}
             subtitle={
-              e.quincenasSpan > 1
-                ? `repartido en ${e.quincenasSpan} quincenas · cobro ${e.due}`
-                : `cobro ${e.due}`
+              e.paid
+                ? '✓ pagado este mes — nada que apartar'
+                : e.quincenasSpan > 1
+                  ? `repartido en ${e.quincenasSpan} quincenas · cobro ${e.due}`
+                  : `cobro ${e.due}`
             }
           />
         ))}
@@ -542,8 +578,8 @@ function QuincenaView({
             key={`g-${g.id}`}
             label={g.name}
             amountCents={g.plan.perQuincenaCents}
-            currency={currency}
-            subtitle={goalSubtitle(g)}
+            currency={g.currency}
+            subtitle={goalSubtitle(g, currency)}
           />
         ))}
 
@@ -559,12 +595,12 @@ function QuincenaView({
             <Text className="text-sm text-gray-700 dark:text-gray-300">Disponible para gastar</Text>
             <Text
               className={
-                quincena.freeMoney < 0
+                quincena.freeMoneyRemaining < 0
                   ? 'text-sm font-semibold text-red-600 dark:text-red-400'
                   : 'text-sm font-semibold text-emerald-600 dark:text-emerald-400'
               }
             >
-              {formatCents(quincena.freeMoney, { currency })}
+              {formatCents(quincena.freeMoneyRemaining, { currency })}
             </Text>
           </View>
         </View>
@@ -579,10 +615,15 @@ const PRIORITY_LABEL: Record<GoalPriority, string> = {
   low: 'Prioridad baja',
 };
 
-function goalSubtitle(g: GoalWithPlan): string {
-  if (g.plan.isComplete) return `${PRIORITY_LABEL[g.priority]} · completada`;
-  if (g.plan.isOverdue) return `${PRIORITY_LABEL[g.priority]} · fecha vencida`;
-  return `${PRIORITY_LABEL[g.priority]} · faltan ${g.plan.remainingQuincenas} quincenas`;
+function goalSubtitle(g: GoalWithPlan, viewCurrency: string): string {
+  const base = g.plan.isComplete
+    ? `${PRIORITY_LABEL[g.priority]} · completada`
+    : g.plan.isOverdue
+      ? `${PRIORITY_LABEL[g.priority]} · fecha vencida`
+      : `${PRIORITY_LABEL[g.priority]} · faltan ${g.plan.remainingQuincenas} quincenas`;
+  return g.currency !== viewCurrency
+    ? `${base} · en ${g.currency} (no entra en este presupuesto)`
+    : base;
 }
 
 /** Cuántas cuotas de quincena de una meta aplican en un mes (1 o 2). */

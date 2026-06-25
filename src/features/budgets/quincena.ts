@@ -20,12 +20,14 @@ import { calculateBuckets, type BucketBreakdown } from './calculate';
 export interface ExpenseProvisionRow {
   id: string;
   name: string;
-  /** Monto a apartar ESTA quincena, centavos enteros. */
+  /** Monto a apartar ESTA quincena, centavos enteros (0 si ya está pagado). */
   amountCents: number;
   /** Fecha de cobro calculada, 'yyyy-MM-dd'. */
   due: string;
   /** Entre cuántas quincenas se reparte (1 = todo esta quincena). */
   quincenasSpan: number;
+  /** Ya marcado como pagado este mes → no hay que apartar más. */
+  paid: boolean;
 }
 
 export interface QuincenaBudget extends BucketBreakdown {
@@ -43,6 +45,7 @@ interface FixedExpenseLite {
   name: string;
   amount_cents: number;
   due_day: number;
+  paid: number;
 }
 
 /**
@@ -89,29 +92,37 @@ export async function getQuincenaBudget(
   );
 
   // Gastos fijos vigentes este mes, en esta moneda. Cada uno se amortiza.
+  // LEFT JOIN con los pagos del mes: si ya está pagado, no hay que apartar más.
   const fixedRows = await db.getAllAsync<FixedExpenseLite>(
-    `SELECT id, name, amount_cents, due_day
-       FROM fixed_expenses
-      WHERE is_active = 1
-        AND currency = ?
-        AND substr(start_date, 1, 7) <= ?
-        AND (end_date IS NULL OR substr(end_date, 1, 7) >= ?)
-      ORDER BY due_day ASC`,
+    `SELECT fe.id, fe.name, fe.amount_cents, fe.due_day,
+            CASE WHEN fep.id IS NULL THEN 0 ELSE 1 END AS paid
+       FROM fixed_expenses fe
+       LEFT JOIN fixed_expense_payments fep
+              ON fep.fixed_expense_id = fe.id AND fep.period = ?
+      WHERE fe.is_active = 1
+        AND fe.currency = ?
+        AND substr(fe.start_date, 1, 7) <= ?
+        AND (fe.end_date IS NULL OR substr(fe.end_date, 1, 7) >= ?)
+      ORDER BY fe.due_day ASC`,
+    period,
     currency,
     period,
     period,
   );
 
   const expenseProvisions: ExpenseProvisionRow[] = fixedRows.map((e) => {
+    const isPaid = e.paid === 1;
     const prov = monthlyExpenseProvision(e.amount_cents, e.due_day, from);
     return {
       id: e.id,
       name: e.name,
-      amountCents: prov.perQuincenaCents,
+      amountCents: isPaid ? 0 : prov.perQuincenaCents,
       due: prov.due,
       quincenasSpan: prov.quincenasSpan,
+      paid: isPaid,
     };
   });
+  // Lo ya pagado no cuenta como "a apartar".
   const fixedProvisionTotal = expenseProvisions.reduce((sum, e) => sum + e.amountCents, 0);
 
   const variableRow = await db.getFirstAsync<{ total: number }>(
