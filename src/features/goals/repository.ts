@@ -3,7 +3,14 @@ import { randomUUID } from 'expo-crypto';
 
 import { getQuincena, quincenaKey } from '@/features/cycle/cycle';
 import { getDb } from '@/shared/db';
-import type { Goal, GoalContribution, GoalPriority, SqliteBoolean } from '@/shared/db/types';
+import type {
+  Goal,
+  GoalContribution,
+  GoalContributionSource,
+  GoalPriority,
+  SqliteBoolean,
+} from '@/shared/db/types';
+import { convertCents } from '@/shared/utils/exchange';
 
 import { calculateGoalPlan, type GoalPlan } from './calc';
 
@@ -33,6 +40,13 @@ export interface GoalWithPlan extends Goal {
   contributed_this_quincena: number;
   /** Cuota sugerida a apartar esta quincena (= plan.perQuincenaCents, sobre el saldo real). */
   quincena_quota_cents: number;
+  /**
+   * Lo que FALTA apartar esta quincena = cuota al inicio de la quincena menos
+   * lo ya aportado en ella (nunca negativo). Esto alimenta el sobre Metas:
+   * una vez aportada la cuota, la reserva de esta quincena baja a 0 en vez de
+   * seguir cobrando la cuota recalculada.
+   */
+  quincena_ask_cents: number;
   plan: GoalPlan;
 }
 
@@ -170,45 +184,64 @@ async function getThisQuincenaMap(quincenaKeyValue: string): Promise<Map<string,
   return new Map(rows.map((r) => [r.goal_id, r.saved]));
 }
 
-/** Borra los aportes de una meta en una quincena (para desmarcar). */
-export async function removeQuincenaContributions(
+/**
+ * Quita SOLO el aporte hecho con el check del Inicio en esa quincena.
+ * Los abonos manuales (source='manual') NUNCA se tocan desde acá — desmarcar
+ * el check no puede borrar plata que el usuario registró a mano.
+ */
+export async function removeQuincenaCheckContribution(
   goalId: string,
   quincenaKeyValue: string,
 ): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    'DELETE FROM goal_contributions WHERE goal_id = ? AND quincena_key = ?',
+    "DELETE FROM goal_contributions WHERE goal_id = ? AND quincena_key = ? AND source = 'check'",
     goalId,
     quincenaKeyValue,
   );
 }
 
+export interface AddContributionOptions {
+  /** Fecha del aporte ('yyyy-MM-dd'). Default: hoy. Define la quincena_key. */
+  contributedAt?: string;
+  /** 'manual' (abono libre, default) o 'check' (check quincenal del Inicio). */
+  source?: GoalContributionSource;
+}
+
 /**
  * Registra un aporte a una meta. La fecha define la quincena (quincena_key).
+ * Con source='check' es IDEMPOTENTE: el índice UNIQUE parcial (v8) garantiza a
+ * lo sumo un aporte de check por (meta, quincena) — un doble-tap no duplica.
  */
 export async function addContribution(
   goalId: string,
   amountCents: number,
-  contributedAt: string = format(new Date(), 'yyyy-MM-dd'),
+  options: AddContributionOptions = {},
 ): Promise<GoalContribution> {
   const db = await getDb();
   const now = new Date().toISOString();
+  const contributedAt = options.contributedAt ?? format(new Date(), 'yyyy-MM-dd');
+  const source = options.source ?? 'manual';
   const row: GoalContribution = {
     id: randomUUID(),
     goal_id: goalId,
     amount_cents: amountCents,
     contributed_at: contributedAt,
     quincena_key: quincenaKey(getQuincena(contributedAt)),
+    source,
     created_at: now,
   };
+  // OR IGNORE solo tiene efecto para 'check' (índice UNIQUE parcial): si el
+  // check ya existe, el INSERT se descarta en vez de duplicar el aporte.
   await db.runAsync(
-    `INSERT INTO goal_contributions (id, goal_id, amount_cents, contributed_at, quincena_key, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO goal_contributions (id, goal_id, amount_cents, contributed_at, quincena_key, source, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     row.id,
     row.goal_id,
     row.amount_cents,
     row.contributed_at,
     row.quincena_key,
+    row.source,
     row.created_at,
   );
   return row;
@@ -223,6 +256,27 @@ export async function listContributions(goalId: string): Promise<GoalContributio
 }
 
 /* ===== PLANES ===== */
+
+/**
+ * Cuota pendiente de ESTA quincena: cuota calculada al INICIO de la quincena
+ * (antes de sus aportes) menos lo ya aportado en ella, nunca negativa. Así,
+ * marcar el check (o abonar la cuota a mano) deja la reserva de la quincena en
+ * 0 en vez de re-cobrar la cuota recalculada sobre el nuevo saldo.
+ */
+function computeQuincenaAsk(
+  goal: Goal,
+  savedCents: number,
+  contributedThisQuincena: number,
+  from: Date,
+): number {
+  const planAtStart = calculateGoalPlan({
+    targetCents: goal.target_cents,
+    savedCents: savedCents - contributedThisQuincena,
+    from,
+    deadline: parseISO(goal.deadline),
+  });
+  return Math.max(0, planAtStart.perQuincenaCents - contributedThisQuincena);
+}
 
 /** Metas activas con su total ahorrado, lo aportado esta quincena y plan. */
 export async function listGoalsWithPlan(from: Date = new Date()): Promise<GoalWithPlan[]> {
@@ -245,6 +299,7 @@ export async function listGoalsWithPlan(from: Date = new Date()): Promise<GoalWi
       saved_cents,
       contributed_this_quincena,
       quincena_quota_cents: plan.perQuincenaCents,
+      quincena_ask_cents: computeQuincenaAsk(g, saved_cents, contributed_this_quincena, from),
       plan,
     };
   });
@@ -271,18 +326,26 @@ export async function getGoalWithPlan(
     saved_cents,
     contributed_this_quincena,
     quincena_quota_cents: plan.perQuincenaCents,
+    quincena_ask_cents: computeQuincenaAsk(g, saved_cents, contributed_this_quincena, from),
     plan,
   };
 }
 
 /**
- * Reserva total sugerida para metas en una moneda y quincena (vista desde `from`).
- * Es la suma de las cuotas quincenales de las metas activas de esa moneda.
+ * Reserva total pendiente para metas esta quincena, expresada en `viewCurrency`.
+ * Suma la cuota PENDIENTE (ask) de TODAS las metas activas, convirtiendo las de
+ * otra moneda con la tasa aproximada — mismo criterio que usa el Inicio, para
+ * que la alerta de sobregasto y el dashboard no se contradigan.
  * Alimenta `goalsReserveAmount` del presupuesto quincenal.
  */
-export async function getGoalsReserve(from: Date, currency: string): Promise<number> {
+export async function getGoalsReserve(
+  from: Date,
+  viewCurrency: string,
+  usdToCrcRate: number,
+): Promise<number> {
   const plans = await listGoalsWithPlan(from);
-  return plans
-    .filter((g) => g.currency === currency)
-    .reduce((sum, g) => sum + g.plan.perQuincenaCents, 0);
+  return plans.reduce(
+    (sum, g) => sum + convertCents(g.quincena_ask_cents, g.currency, viewCurrency, usdToCrcRate),
+    0,
+  );
 }

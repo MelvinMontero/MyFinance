@@ -34,6 +34,7 @@ export default function GoalDetailScreen() {
   const [goal, setGoal] = useState<GoalWithPlan | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [abonoText, setAbonoText] = useState('');
+  const [abonando, setAbonando] = useState(false);
 
   const reload = useCallback(async () => {
     if (!id) return;
@@ -84,6 +85,7 @@ export default function GoalDetailScreen() {
 
   async function handleAbono() {
     if (!goal || !id) return;
+    if (abonando) return; // guard: un doble-tap no registra el abono dos veces
     let cents: number;
     try {
       cents = toCents(parseAmount(abonoText));
@@ -95,12 +97,15 @@ export default function GoalDetailScreen() {
       Alert.alert('Monto inválido', 'El abono debe ser mayor que cero.');
       return;
     }
+    setAbonando(true);
     try {
       await addContribution(id, cents);
       setAbonoText('');
       await reload();
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : String(err));
+    } finally {
+      setAbonando(false);
     }
   }
 
@@ -224,10 +229,18 @@ export default function GoalDetailScreen() {
               )}
               <Pressable
                 onPress={handleAbono}
+                disabled={abonando}
                 accessibilityRole="button"
-                className="flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 active:bg-emerald-700"
+                accessibilityState={{ disabled: abonando }}
+                className={
+                  abonando
+                    ? 'flex-1 items-center justify-center rounded-xl bg-emerald-300 px-4 py-3'
+                    : 'flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 active:bg-emerald-700'
+                }
               >
-                <Text className="text-base font-bold text-white">Abonar</Text>
+                <Text className="text-base font-bold text-white">
+                  {abonando ? 'Guardando…' : 'Abonar'}
+                </Text>
               </Pressable>
             </View>
           </View>

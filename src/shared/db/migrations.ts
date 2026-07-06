@@ -174,4 +174,25 @@ export const migrations: Migration[] = [
       ALTER TABLE incomes ADD COLUMN payday_2 INTEGER;
     `,
   },
+  {
+    version: 8,
+    description: 'origen de aportes a metas (check vs manual) + unicidad de pagos de fijos',
+    sql: `
+      ALTER TABLE goal_contributions ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'
+        CHECK (source IN ('manual','check'));
+
+      -- El check del Inicio inserta a lo sumo UN aporte por (meta, quincena).
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_goal_contrib_check_unique
+        ON goal_contributions(goal_id, quincena_key) WHERE source = 'check';
+
+      -- Antes de imponer unicidad, limpiar duplicados creados por el bug de
+      -- doble-tap en "pagado" (conservamos una fila por gasto+período).
+      DELETE FROM fixed_expense_payments
+       WHERE id NOT IN (
+         SELECT MIN(id) FROM fixed_expense_payments GROUP BY fixed_expense_id, period
+       );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_fixed_payments_unique
+        ON fixed_expense_payments(fixed_expense_id, period);
+    `,
+  },
 ];

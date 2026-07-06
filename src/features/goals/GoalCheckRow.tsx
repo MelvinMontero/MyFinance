@@ -12,19 +12,21 @@ interface Props {
   viewCurrency: string;
   /** Tasa ₡ por $1 para convertir metas en otra moneda. */
   rate: number;
-  /** Marca/desmarca el aporte de la quincena. quotaCents va en la moneda de la meta. */
-  onToggle: (goalId: string, quotaCents: number, currentlyDone: boolean) => void;
+  /** Marca/desmarca el aporte de la quincena. askCents va en la moneda de la meta. */
+  onToggle: (goalId: string, askCents: number, currentlyDone: boolean) => void;
 }
 
 /** Fila de meta en el desglose, con check para marcar "ya aparté esta cuota". */
 export function GoalCheckRow({ goal, viewCurrency, rate, onToggle }: Props) {
-  const quota = goal.quincena_quota_cents; // en la moneda de la meta
-  const done = goal.contributed_this_quincena > 0; // ya aportó algo esta quincena
-  const converted = convertCents(quota, goal.currency, viewCurrency, rate);
+  // Lo que FALTA apartar esta quincena (0 si el check o abonos ya la cubrieron).
+  const ask = goal.quincena_ask_cents; // en la moneda de la meta
+  const done = goal.contributed_this_quincena > 0 && ask === 0; // cuota cubierta
+  const shown = done ? goal.contributed_this_quincena : ask;
+  const converted = convertCents(shown, goal.currency, viewCurrency, rate);
   const isOther = goal.currency !== viewCurrency;
 
-  // Sin cuota que apartar (meta completada o vencida): fila simple sin check.
-  if (quota <= 0) {
+  // Sin cuota que apartar ni aporte esta quincena (completada/vencida): fila simple.
+  if (ask <= 0 && goal.contributed_this_quincena === 0) {
     return (
       <View className="flex-row items-center justify-between border-b border-gray-100 dark:border-gray-800 py-3">
         <Text className="flex-1 pr-3 text-base font-medium text-gray-400 dark:text-gray-500">{goal.name}</Text>
@@ -37,13 +39,15 @@ export function GoalCheckRow({ goal, viewCurrency, rate, onToggle }: Props) {
 
   const subtitle = done
     ? `✓ aportaste ${formatCents(goal.contributed_this_quincena, { currency: goal.currency })} esta quincena`
-    : isOther
-      ? `Tocá para apartar · ≈ de ${formatCents(quota, { currency: goal.currency })}`
-      : 'Tocá para marcar que ya lo apartaste';
+    : goal.contributed_this_quincena > 0
+      ? `Aportaste ${formatCents(goal.contributed_this_quincena, { currency: goal.currency })} · tocá para apartar el resto`
+      : isOther
+        ? `Tocá para apartar · ≈ de ${formatCents(ask, { currency: goal.currency })}`
+        : 'Tocá para marcar que ya lo apartaste';
 
   return (
     <Pressable
-      onPress={() => onToggle(goal.id, quota, done)}
+      onPress={() => onToggle(goal.id, ask, done)}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: done }}
       accessibilityLabel={done ? `Desmarcar aporte a ${goal.name}` : `Marcar aporte a ${goal.name}`}

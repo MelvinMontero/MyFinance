@@ -2,7 +2,7 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlertTriangle, PiggyBank, Plus, Receipt, Target, Wallet } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,7 +18,7 @@ import { GoalCheckRow } from '@/features/goals/GoalCheckRow';
 import {
   addContribution,
   listGoalsWithPlan,
-  removeQuincenaContributions,
+  removeQuincenaCheckContribution,
   type GoalWithPlan,
 } from '@/features/goals/repository';
 import { IncomeConfirmCard } from '@/features/incomes/IncomeConfirmCard';
@@ -70,8 +70,10 @@ export default function HomeScreen() {
         // se convierten a la moneda activa con la tasa aproximada (₡/$), para
         // que entren en la reserva y en el desglose.
         const goals = await listGoalsWithPlan(today);
+        // Reserva quincenal = lo que FALTA apartar (ask): marcar el check o
+        // abonar la cuota deja de cobrarla en esta misma quincena.
         const goalsReserve = goals.reduce(
-          (sum, g) => sum + convertCents(g.quincena_quota_cents, g.currency, liveCurrency, liveRate),
+          (sum, g) => sum + convertCents(g.quincena_ask_cents, g.currency, liveCurrency, liveRate),
           0,
         );
         // Reserva mensual ≈ las cuotas de las quincenas del mes (hasta 2).
@@ -123,18 +125,27 @@ export default function HomeScreen() {
     [loadData],
   );
 
-  // Marca/desmarca el aporte a una meta en la quincena en curso.
+  // Marca/desmarca el aporte a una meta en la quincena MOSTRADA.
+  // - Guard anti doble-tap: dos taps rápidos no duplican el aporte.
+  // - Desmarcar borra SOLO el aporte del check (los abonos manuales quedan).
+  // - `qKey` viene de los datos cargados: si la pantalla quedó abierta al
+  //   cruzar de quincena, se desmarca la quincena que el usuario está viendo.
+  const goalToggleBusy = useRef(false);
   const handleToggleGoalSaved = useCallback(
-    async (goalId: string, quotaCents: number, currentlyDone: boolean) => {
+    async (goalId: string, askCents: number, currentlyDone: boolean, qKey: string) => {
+      if (goalToggleBusy.current) return;
+      goalToggleBusy.current = true;
       try {
         if (currentlyDone) {
-          await removeQuincenaContributions(goalId, quincenaKey(getQuincena(new Date())));
-        } else {
-          await addContribution(goalId, quotaCents);
+          await removeQuincenaCheckContribution(goalId, qKey);
+        } else if (askCents > 0) {
+          await addContribution(goalId, askCents, { source: 'check' });
         }
         await loadData(false);
       } catch (err) {
         Alert.alert('Error', err instanceof Error ? err.message : String(err));
+      } finally {
+        goalToggleBusy.current = false;
       }
     },
     [loadData],
@@ -278,7 +289,12 @@ function BucketsBlock({
   rate: number;
   paymentSummary: { paid: number; total: number };
   onConfirm: (id: string, confirmed: boolean) => void;
-  onToggleGoalSaved: (goalId: string, quotaCents: number, currentlyDone: boolean) => void;
+  onToggleGoalSaved: (
+    goalId: string,
+    askCents: number,
+    currentlyDone: boolean,
+    qKey: string,
+  ) => void;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>('biweekly');
 
@@ -492,7 +508,12 @@ function QuincenaView({
   savingsPercent: number;
   rate: number;
   onConfirm: (id: string, confirmed: boolean) => void;
-  onToggleGoalSaved: (goalId: string, quotaCents: number, currentlyDone: boolean) => void;
+  onToggleGoalSaved: (
+    goalId: string,
+    askCents: number,
+    currentlyDone: boolean,
+    qKey: string,
+  ) => void;
 }) {
   const { startDate, endDate } = quincena.quincena;
   const rangeLabel = `${format(parseISO(startDate), "d 'de' MMM", { locale: es })} – ${format(parseISO(endDate), "d 'de' MMM", { locale: es })}`;
@@ -645,7 +666,11 @@ function QuincenaView({
             goal={g}
             viewCurrency={currency}
             rate={rate}
-            onToggle={onToggleGoalSaved}
+            onToggle={(goalId, askCents, currentlyDone) =>
+              // La quincena MOSTRADA (no `new Date()`): si la pantalla quedó
+              // abierta al cruzar el día 15, se opera sobre lo que se ve.
+              onToggleGoalSaved(goalId, askCents, currentlyDone, quincenaKey(quincena.quincena))
+            }
           />
         ))}
 

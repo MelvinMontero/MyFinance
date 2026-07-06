@@ -60,16 +60,20 @@ export function BreakdownModal({ visible, onClose, quincena, goals, currency, ra
 
             {goals.length > 0 && <SectionLabel text="Metas" />}
             {goals.map((g) => {
-              const converted = convertCents(g.quincena_quota_cents, g.currency, currency, rate);
+              // Lo PENDIENTE de esta quincena: si el check o un abono ya
+              // cubrió la cuota, acá aparece "✓ aportado" (igual que fijos pagados).
+              const covered = g.quincena_ask_cents === 0 && g.contributed_this_quincena > 0;
+              const converted = convertCents(g.quincena_ask_cents, g.currency, currency, rate);
               const isOther = g.currency !== currency;
               return (
                 <Row
                   key={g.id}
                   label={g.name}
-                  amount={formatCents(converted, { currency })}
+                  amount={covered ? '✓ aportado' : formatCents(converted, { currency })}
+                  muted={covered}
                   hint={
-                    isOther
-                      ? `≈ de ${formatCents(g.quincena_quota_cents, { currency: g.currency })} (cambio ₡${rate}/$)`
+                    !covered && isOther
+                      ? `≈ de ${formatCents(g.quincena_ask_cents, { currency: g.currency })} (cambio ₡${rate}/$)`
                       : undefined
                   }
                 />

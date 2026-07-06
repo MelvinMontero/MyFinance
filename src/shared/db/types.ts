@@ -115,11 +115,15 @@ export interface Goal {
   updated_at: string;
 }
 
+/** Origen de un aporte: 'check' = check quincenal del Inicio; 'manual' = abono libre. */
+export type GoalContributionSource = 'manual' | 'check';
+
 export interface GoalContribution {
   id: string;
   goal_id: string;
   amount_cents: number;
   contributed_at: string; // 'yyyy-MM-dd'
   quincena_key: string; // 'yyyy-MM-H' (H = 1 | 2)
+  source: GoalContributionSource; // migración v8
   created_at: string;
 }
