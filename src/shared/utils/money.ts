@@ -66,9 +66,17 @@ export function formatCents(cents: number, options: FormatOptions = {}): string 
  * Tolera ambos separadores (es-CR usa coma decimal, en-US usa punto)
  * y separadores de miles. Útil para inputs sin máscara.
  *
+ * Punto SIN coma es ambiguo ("1.500"): en es-CR el punto es separador de
+ * miles. Regla: si cada grupo tras un punto tiene exactamente 3 dígitos y el
+ * grupo inicial es 1–3 dígitos sin cero a la izquierda, se trata como MILES.
+ *
  * Ejemplos:
  *   "1.234,56"  → 1234.56  (es-CR)
  *   "1,234.56"  → 1234.56  (en-US)
+ *   "1.500"     → 1500     (miles es-CR — NO 1.5)
+ *   "1.234.567" → 1234567  (miles es-CR)
+ *   "1.50"      → 1.5      (grupo de 2 → decimal)
+ *   "0.500"     → 0.5      (cero inicial → decimal)
  *   "1234"      → 1234
  *   "₡1.234,56" → 1234.56  (ignora símbolos)
  */
@@ -91,9 +99,20 @@ export function parseAmount(input: string): number {
   } else if (lastComma > lastDot) {
     // coma es decimal, puntos son miles
     normalized = cleaned.replace(/\./g, '').replace(',', '.');
-  } else {
-    // punto es decimal, comas son miles
+  } else if (lastComma !== -1) {
+    // hay coma antes del punto → comas son miles, punto es decimal (en-US)
     normalized = cleaned.replace(/,/g, '');
+  } else {
+    // SOLO puntos: desambiguar miles es-CR vs decimal.
+    const [head, ...groups] = cleaned.split('.');
+    const headDigits = head?.replace('-', '') ?? '';
+    const isThousands =
+      groups.length > 0 &&
+      headDigits.length >= 1 &&
+      headDigits.length <= 3 &&
+      !headDigits.startsWith('0') &&
+      groups.every((g) => g.length === 3);
+    normalized = isThousands ? cleaned.replace(/\./g, '') : cleaned;
   }
 
   const parsed = Number.parseFloat(normalized);

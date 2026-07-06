@@ -88,6 +88,36 @@ describe('parseAmount', () => {
     expect(parseAmount('1,234.56')).toBe(1234.56);
   });
 
+  it('trata punto + grupo de 3 dígitos como MILES es-CR (bug "1.500" → ₡1,50)', () => {
+    expect(parseAmount('1.500')).toBe(1500);
+    expect(parseAmount('12.500')).toBe(12500);
+    expect(parseAmount('180.000')).toBe(180000);
+    expect(parseAmount('1.234.567')).toBe(1234567);
+    expect(parseAmount('₡1.500')).toBe(1500);
+  });
+
+  it('punto con grupo distinto de 3 dígitos sigue siendo decimal', () => {
+    expect(parseAmount('1.5')).toBe(1.5);
+    expect(parseAmount('1.50')).toBe(1.5);
+    expect(parseAmount('10.25')).toBe(10.25);
+  });
+
+  it('cero inicial fuerza decimal aunque el grupo tenga 3 dígitos', () => {
+    expect(parseAmount('0.500')).toBe(0.5);
+  });
+
+  it('grupo inicial de más de 3 dígitos sigue siendo decimal', () => {
+    expect(parseAmount('1234.567')).toBe(1234.567);
+  });
+
+  it('miles con coma decimal no se ven afectados', () => {
+    expect(parseAmount('1.500,50')).toBe(1500.5);
+  });
+
+  it('maneja negativos con miles', () => {
+    expect(parseAmount('-1.500')).toBe(-1500);
+  });
+
   it('ignora símbolos de moneda', () => {
     expect(parseAmount('₡1.234,56')).toBe(1234.56);
     expect(parseAmount('$1,234.56')).toBe(1234.56);
