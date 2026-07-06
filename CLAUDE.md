@@ -144,9 +144,9 @@ npm run test:watch       # Jest watch mode
 ✅ **Fases 1–7 + ciclo quincenal real + metas de ahorro.** Ver [CHANGELOG.md](./CHANGELOG.md) para el detalle por versión.
 
 - Expo SDK 54 + TS strict + Expo Router 6 (file-based, `src/app/`) + NativeWind 4 + Zustand 5.
-- SQLite con migrador versionado e **inmutable** — **migración v7 aplicada**, 10 tablas (incluye `goals`, `goal_contributions`; settings con tasa USD/CRC; incomes con días de pago).
+- SQLite con migrador versionado e **inmutable** — **migración v8 aplicada**, 10 tablas (incluye `goals`, `goal_contributions` con `source` check/manual; settings con tasa USD/CRC; incomes con días de pago; índices UNIQUE anti-duplicados en pagos de fijos y checks de metas).
 - Ingresos, gastos fijos, gastos variables, sobres mensuales, reportes, onboarding, biometría, dark mode, backup JSON.
-- **Ciclo quincenal real** (Q1 = 1–14, Q2 = 15–fin): `features/cycle/` + `features/budgets/quincena.ts`. El gasto mensual se **amortiza** entre las quincenas que faltan hasta su cobro.
+- **Ciclo quincenal real** (Q1 = 1–14, Q2 = 15–fin): `features/cycle/` + `features/budgets/quincena.ts`. Días de pago por defecto **1 y 15** (cada pago cae en su quincena; si pagan a fin de mes, registrar día 1). El gasto fijo mensual se reparte **50/50** entre las dos quincenas (regla vigente desde 2026-07-06; la amortización por fecha de cobro fue derogada).
 - **Metas de ahorro** con prioridad (alta/media/baja): `features/goals/` + pestaña Metas (7ª). Cuota por quincena = `ceil(restante / quincenas)`.
 - **Notificaciones** locales: día de pago, gasto fijo por vencer (días configurables), cuenta regresiva de metas, alerta de sobregasto.
 - Tests: **105** (lógica pura con TDD: `cycle`, `expense`, `calculate`, `goals/calc`, `notifications/plan`, `money`, `occurrences`).

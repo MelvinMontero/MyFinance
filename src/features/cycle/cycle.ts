@@ -1,9 +1,11 @@
 /**
  * Lógica pura de quincenas. SIN DB, SIN efectos — testeable directo.
  *
- * Modelo de quincena (confirmado con el dueño):
+ * Modelo de quincena (confirmado con el dueño, 2026-07-06):
  *   Q1 = días 1–14, Q2 = días 15–fin de mes.
- * El pago del 15 cubre Q2; el pago de fin de mes cubre la Q1 siguiente.
+ * Días de pago por defecto: 1 y 15 — cada pago cae en SU propia quincena
+ * (el del 1 cubre Q1, el del 15 cubre Q2). Si a alguien le pagan a fin de
+ * mes, se registra como día 1: ese dinero es de la quincena que arranca.
  */
 import { format, getDaysInMonth, isAfter, parseISO, startOfDay } from 'date-fns';
 

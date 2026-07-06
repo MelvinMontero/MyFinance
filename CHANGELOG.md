@@ -2,7 +2,32 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) — fechas YYYY-MM-DD.
 
-## [Unreleased]
+## [0.9.2] - 2026-07-06 — Correcciones de auditoría
+
+> Auditoría exhaustiva del sistema (capa de datos, lógica pura y pantallas)
+> con 3 revisores independientes: 5 hallazgos ALTA y 12 MEDIA. Esta versión
+> corrige todos los ALTA y los MEDIA de dinero/carreras.
+
+### Fixed — pierden o inventan dinero (ALTA)
+- **Desmarcar el check de meta ya NO borra los abonos manuales.** Los aportes ahora guardan su origen (`source` check/manual, migración v8); desmarcar elimina solo el aporte del check. Antes borraba TODO lo aportado en la quincena sin aviso.
+- **Doble-tap en el check de meta ya no duplica el aporte.** Índice UNIQUE parcial (meta, quincena) para aportes de check + `INSERT OR IGNORE` + guard anti doble-tap en el Inicio. Ídem para el botón "Abonar" del detalle (disabled durante el guardado).
+- **El sobre Metas ya no cobra doble.** La reserva quincenal usa la cuota PENDIENTE (`quincena_ask_cents` = cuota al inicio de la quincena − aportado): marcar el check o abonar la cuota deja la reserva de esa quincena en 0 en vez de pedir la cuota recalculada. El desglose y el modal muestran "✓ aportado".
+- **"1.500" ya se interpreta como mil quinientos (₡1.500), no ₡1,50.** `parseAmount` trata punto + grupos de exactamente 3 dígitos como separador de miles es-CR ("1.500" → 1500, "1.234.567" → 1234567); "1.50", "0.500" y "1.500,50" siguen siendo decimales.
+- **Ocurrencias de ingreso duplicadas en meses cortos.** Dos días de pago que clampan al mismo día (ej. 28 y 30 → 28-feb) generaban el ingreso DOBLE esa quincena; ahora se deduplica después del clamp. Además el formulario rechaza dos días de pago iguales.
+
+### Fixed — consistencia y carreras (MEDIA)
+- **Doble-tap en "pagado" de un gasto fijo ya no duplica el pago**: índice UNIQUE (gasto, período) en v8 — que también limpia duplicados existentes — + `INSERT OR IGNORE` + guard en el tab.
+- **Los tabs Extras y Fijos ya no congelan el mes.** El período se recalcula en cada focus y al momento del tap: con la app abierta al cambiar de mes, ya no se registraban pagos en el mes anterior.
+- **Desmarcar el check de meta al cruzar de quincena** (pantalla abierta del 14 al 15) ahora opera sobre la quincena MOSTRADA, no sobre la del reloj — se acabó el aporte fantasma.
+- **La alerta de sobregasto ahora usa la misma reserva de metas que el Inicio** (incluye metas en otra moneda convertidas con la tasa ₡/$). Antes el dashboard mostraba sobregiro pero la alerta no disparaba.
+- **Recordatorios de día de pago**: el fallback sin ingresos configurados pasa de [15, 31] a **[1, 15]** (los anclajes del modelo); se deduplican avisos cuando dos días clampan al mismo (30/31 en meses cortos) y cuando "avisar N días antes" es 0.
+
+### Changed
+- **Backup v2**: el respaldo exporta el origen de los aportes; el import acepta respaldos viejos (v1) y rechaza con mensaje claro los de versiones futuras (antes reventaba con un error SQL crudo).
+- **Migración v8** (inmutable): `goal_contributions.source` + índices UNIQUE anti-duplicados.
+- Eliminado el código muerto de amortización (`expenseProvision`/`monthlyExpenseProvision`) que preservaba la regla derogada; docs (CLAUDE.md, cycle.ts) actualizadas al modelo 1/15 + 50/50.
+
+## [0.9.1] - 2026-07-06 — Quincenas alineadas a los días de pago
 
 ### Added
 - **Ingresos quincenales con días de pago configurables.** Al elegir frecuencia "Quincenal" se piden los dos días del mes en que se cobra (ej. 15 y 30); las ocurrencias se generan en esos días (recortando al último día si el mes es más corto). Migración v7 (`incomes.payday_1`, `incomes.payday_2`). Los recordatorios de día de pago usan esos días configurados.

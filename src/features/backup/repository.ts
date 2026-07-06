@@ -8,7 +8,11 @@ import { format } from 'date-fns';
 
 import { getDb } from '@/shared/db';
 
-const BACKUP_VERSION = 1;
+// v2 (schema v8): goal_contributions.source. El import es tolerante hacia
+// atrás (inserta las columnas que traiga el JSON; las nuevas toman DEFAULT),
+// así que aceptamos cualquier versión ≤ BACKUP_VERSION y rechazamos las
+// FUTURAS (un APK viejo no debe intentar importar un respaldo más nuevo).
+const BACKUP_VERSION = 2;
 
 interface BackupTable {
   name: string;
@@ -122,10 +126,10 @@ export async function importBackup(): Promise<
   if (parsed.app !== 'myfinance') {
     return { ok: false, reason: 'No es un respaldo de MyFinance.' };
   }
-  if (parsed.version !== BACKUP_VERSION) {
+  if (typeof parsed.version !== 'number' || parsed.version > BACKUP_VERSION) {
     return {
       ok: false,
-      reason: `Versión de respaldo ${parsed.version} no soportada (esperaba ${BACKUP_VERSION}).`,
+      reason: `Este respaldo es de una versión más nueva de MyFinance (v${String(parsed.version)}). Actualizá la app para importarlo.`,
     };
   }
   if (!Array.isArray(parsed.tables)) {
