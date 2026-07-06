@@ -55,6 +55,55 @@ describe('generateOccurrences — biweekly con días de pago configurados', () =
     );
     expect(result.map((o) => o.occurred_at)).toEqual(['2026-01-01', '2026-01-15', '2026-01-29']);
   });
+
+  it('NO duplica cuando dos días distintos clampan al mismo día (28 y 30 en febrero)', () => {
+    const result = generateOccurrences(
+      income({
+        frequency: 'biweekly',
+        start_date: '2026-02-01',
+        end_date: '2026-03-31',
+        payday_1: 28,
+        payday_2: 30,
+      }),
+      { generateId: makeIdGen(), now: FIXED_NOW },
+    );
+    // Febrero 2026 (28 días): 28 y 30 colapsan al 28 → UNA sola ocurrencia.
+    expect(result.map((o) => o.occurred_at)).toEqual(['2026-02-28', '2026-03-28', '2026-03-30']);
+  });
+
+  it('NO duplica con 30 y 31 en meses de 30 días', () => {
+    const result = generateOccurrences(
+      income({
+        frequency: 'biweekly',
+        start_date: '2026-04-01',
+        end_date: '2026-05-31',
+        payday_1: 30,
+        payday_2: 31,
+      }),
+      { generateId: makeIdGen(), now: FIXED_NOW },
+    );
+    // Abril (30 días): 30 y 31 colapsan al 30 → una sola. Mayo (31): las dos.
+    expect(result.map((o) => o.occurred_at)).toEqual(['2026-04-30', '2026-05-30', '2026-05-31']);
+  });
+
+  it('días de pago 1 y 15 (default nuevo) generan una ocurrencia por quincena', () => {
+    const result = generateOccurrences(
+      income({
+        frequency: 'biweekly',
+        start_date: '2026-01-01',
+        end_date: '2026-02-28',
+        payday_1: 1,
+        payday_2: 15,
+      }),
+      { generateId: makeIdGen(), now: FIXED_NOW },
+    );
+    expect(result.map((o) => o.occurred_at)).toEqual([
+      '2026-01-01',
+      '2026-01-15',
+      '2026-02-01',
+      '2026-02-15',
+    ]);
+  });
 });
 
 describe('generateOccurrences — frecuencia one_time', () => {

@@ -55,6 +55,17 @@ export const incomeFormSchema = z
       message: 'Elegí los dos días de pago del mes',
       path: ['payday_1'],
     },
+  )
+  .refine(
+    (data) =>
+      data.frequency !== 'biweekly' ||
+      data.payday_1 == null ||
+      data.payday_2 == null ||
+      data.payday_1 !== data.payday_2,
+    {
+      message: 'Los dos días de pago deben ser distintos',
+      path: ['payday_2'],
+    },
   );
 
 export type IncomeFormValues = z.infer<typeof incomeFormSchema>;

@@ -85,8 +85,12 @@ export function generateOccurrences(
       const CAP = 480;
       for (let i = 0; i < CAP; i++) {
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        for (const d of days) {
-          const date = new Date(year, month, Math.min(d, daysInMonth));
+        // Dedup DESPUÉS del clamp: en meses cortos dos días configurados
+        // distintos pueden colapsar al mismo día (ej. 28 y 30 → 28 en febrero);
+        // sin esto se generaría el ingreso DOBLE esa quincena.
+        const clampedDays = [...new Set(days.map((d) => Math.min(d, daysInMonth)))];
+        for (const d of clampedDays) {
+          const date = new Date(year, month, d);
           if (!isAfter(startDate, date) && !isAfter(date, windowEnd)) {
             result.push(build(date));
           }
