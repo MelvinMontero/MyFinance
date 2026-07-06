@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Plus, Receipt } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,16 +19,22 @@ import type { Category } from '@/shared/db/types';
 
 export default function FixedExpensesScreen() {
   const router = useRouter();
-  const [period] = useState(currentPeriod);
+  // El período se REFRESCA en cada focus (no useState congelado al primer
+  // mount): si la app queda abierta al cambiar de mes, marcar "pagado"
+  // registraría el pago en el mes anterior.
+  const [period, setPeriod] = useState(currentPeriod);
   const [items, setItems] = useState<FixedExpenseWithPayment[]>([]);
   const [categories, setCategories] = useState<Record<string, Category>>({});
   const [loading, setLoading] = useState(true);
+  const togglingPaid = useRef(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
+      const p = currentPeriod();
+      setPeriod(p);
       const [exps, cats] = await Promise.all([
-        listFixedExpensesWithPayment(period),
+        listFixedExpensesWithPayment(p),
         listCategories({ type: 'fixed_expense', includeArchived: true }),
       ]);
       const catMap: Record<string, Category> = {};
@@ -38,7 +44,7 @@ export default function FixedExpensesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,15 +53,21 @@ export default function FixedExpensesScreen() {
   );
 
   async function handleTogglePaid(id: string, paid: boolean) {
+    if (togglingPaid.current) return; // guard anti doble-tap
+    togglingPaid.current = true;
     try {
+      // Período fresco al momento del tap (no el del último focus).
+      const p = currentPeriod();
       if (paid) {
-        await markAsPaid(id, period);
+        await markAsPaid(id, p);
       } else {
-        await unmarkAsPaid(id, period);
+        await unmarkAsPaid(id, p);
       }
       await reload();
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : String(err));
+    } finally {
+      togglingPaid.current = false;
     }
   }
 

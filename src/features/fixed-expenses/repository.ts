@@ -182,8 +182,9 @@ export async function deleteFixedExpense(id: string): Promise<void> {
 /* ===== PAGOS ===== */
 
 /**
- * Marca un gasto fijo como pagado en el período dado. Idempotente —
- * si ya existe un pago para (expense, period), no duplica.
+ * Marca un gasto fijo como pagado en el período dado. Idempotente incluso
+ * ante carreras (doble-tap): el índice UNIQUE (fixed_expense_id, period) de la
+ * migración v8 + INSERT OR IGNORE garantizan a lo sumo UN pago por período.
  * Usa el amount_cents actual del expense como monto del pago.
  */
 export async function markAsPaid(
@@ -214,7 +215,7 @@ export async function markAsPaid(
   };
 
   await db.runAsync(
-    `INSERT INTO fixed_expense_payments (id, fixed_expense_id, amount_cents, paid_at, period, created_at)
+    `INSERT OR IGNORE INTO fixed_expense_payments (id, fixed_expense_id, amount_cents, paid_at, period, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
     payment.id,
     payment.fixed_expense_id,
@@ -224,7 +225,13 @@ export async function markAsPaid(
     payment.created_at,
   );
 
-  return payment;
+  // Devolver la fila REAL: si otro flujo ganó la carrera, es la suya.
+  const row = await db.getFirstAsync<FixedExpensePayment>(
+    'SELECT * FROM fixed_expense_payments WHERE fixed_expense_id = ? AND period = ?',
+    fixedExpenseId,
+    period,
+  );
+  return row ?? payment;
 }
 
 /** Quita el pago de un gasto fijo en el período dado. */

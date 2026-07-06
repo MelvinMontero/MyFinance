@@ -19,7 +19,9 @@ import { formatCents } from '@/shared/utils/money';
 
 export default function ExtrasScreen() {
   const router = useRouter();
-  const [period] = useState(currentPeriod);
+  // El período se refresca en cada focus (no congelado al primer mount):
+  // si la app queda abierta al cambiar de mes, seguiría mostrando el mes viejo.
+  const [period, setPeriod] = useState(currentPeriod);
   const [items, setItems] = useState<VariableExpense[]>([]);
   const [categories, setCategories] = useState<Record<string, Category>>({});
   const [total, setTotal] = useState(0);
@@ -30,10 +32,12 @@ export default function ExtrasScreen() {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
+      const p = currentPeriod();
+      setPeriod(p);
       const [exps, cats, tot] = await Promise.all([
-        listVariableExpenses({ period, currency: liveCurrency }),
+        listVariableExpenses({ period: p, currency: liveCurrency }),
         listCategories({ type: 'variable_expense', includeArchived: true }),
-        getVariableExpenseTotal(period, liveCurrency),
+        getVariableExpenseTotal(p, liveCurrency),
       ]);
       const catMap: Record<string, Category> = {};
       for (const c of cats) catMap[c.id] = c;
@@ -43,7 +47,7 @@ export default function ExtrasScreen() {
     } finally {
       setLoading(false);
     }
-  }, [period, liveCurrency]);
+  }, [liveCurrency]);
 
   useFocusEffect(
     useCallback(() => {
