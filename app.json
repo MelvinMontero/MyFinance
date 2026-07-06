@@ -2,7 +2,7 @@
   "expo": {
     "name": "MyFinance",
     "slug": "myfinance",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "scheme": "myfinance",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,7 +15,7 @@
     },
     "android": {
       "package": "com.melvin.myfinance",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -54,9 +54,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "09c410e0-f4bf-4f13-b5d5-192453ba258e"
+        "projectId": "5778d55e-f94e-4066-b205-cc182397a379"
       }
     },
-    "owner": "melvinmontero"
+    "owner": "monterodelgado07"
   }
 }
