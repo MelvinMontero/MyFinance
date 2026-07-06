@@ -169,14 +169,17 @@ export async function getQuincenaBudget(
 /**
  * Sobregasto de la quincena en curso para `currency`: centavos por encima del
  * dinero libre (0 si no hay sobregasto). Útil tras registrar un gasto real.
+ * `usdToCrcRate` permite incluir las metas en otra moneda convertidas — el
+ * MISMO criterio que el Inicio, para que la alerta y el dashboard coincidan.
  */
 export async function getCurrentQuincenaOverspendCents(
   currency: string,
   savingsPercent: number,
+  usdToCrcRate: number,
 ): Promise<number> {
   const today = new Date();
   const quincena = getQuincena(today);
-  const goalsReserve = await getGoalsReserve(today, currency);
+  const goalsReserve = await getGoalsReserve(today, currency, usdToCrcRate);
   const qb = await getQuincenaBudget(quincena, currency, savingsPercent, goalsReserve);
   return qb.isOverspent ? Math.abs(qb.freeMoneyRemaining) : 0;
 }

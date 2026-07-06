@@ -37,7 +37,12 @@ export default function NewVariableExpenseScreen() {
       // Alerta de sobregasto: ¿este gasto te pasó del dinero libre de la quincena?
       const savingsPercent = useSettings.getState().savings_percent;
       const notificationsEnabled = useSettings.getState().notifications_enabled;
-      const overspent = await getCurrentQuincenaOverspendCents(values.currency, savingsPercent);
+      const usdToCrcRate = useSettings.getState().usd_to_crc_rate;
+      const overspent = await getCurrentQuincenaOverspendCents(
+        values.currency,
+        savingsPercent,
+        usdToCrcRate,
+      );
       if (overspent > 0) {
         if (notificationsEnabled) {
           await notifyOverspendNow(overspent, values.currency).catch(() => {

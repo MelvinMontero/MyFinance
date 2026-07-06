@@ -42,9 +42,12 @@ export function buildPaydayReminders(
 
   while (result.length < count && guard < 240) {
     const dim = getDaysInMonth(new Date(year, month, 1));
-    for (const d of sortedDays) {
+    // Dedup DESPUÉS del clamp: 30 y 31 colapsan al mismo día en meses cortos —
+    // sin esto se programarían dos avisos idénticos el mismo día.
+    const clampedDays = [...new Set(sortedDays.map((d) => Math.min(d, dim)))];
+    for (const d of clampedDays) {
       if (result.length >= count) break;
-      const date = at9am(new Date(year, month, Math.min(d, dim)));
+      const date = at9am(new Date(year, month, d));
       if (date.getTime() > from.getTime()) {
         result.push({
           key: `payday-${date.toISOString()}`,
@@ -84,7 +87,8 @@ export function buildExpenseReminders(
   const result: PlannedNotification[] = [];
   for (const e of expenses) {
     const due = nextMonthlyDue(from, e.due_day);
-    for (const offset of [daysBefore, 0]) {
+    // Set: con daysBefore=0 los dos offsets coinciden — un solo aviso, no dos.
+    for (const offset of [...new Set([daysBefore, 0])]) {
       const date = at9am(addDays(due, -offset));
       if (date.getTime() <= from.getTime()) continue;
       const title = offset === 0 ? `Hoy se vence ${e.name}` : `Faltan ${offset} día(s): ${e.name}`;

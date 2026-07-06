@@ -85,7 +85,7 @@ export async function rescheduleAllNotifications(
     .map((g) => ({ id: g.id, name: g.name, deadline: parseISO(g.deadline) }));
 
   // Días de pago = los configurados en los ingresos quincenales activos; si no
-  // hay, se usa 15 y fin de mes por defecto.
+  // hay, se usa 1 y 15 por defecto (los anclajes del modelo de quincenas).
   const incomes = await listIncomes({ active: true });
   const configuredDays = [
     ...new Set(
@@ -95,7 +95,7 @@ export async function rescheduleAllNotifications(
         .filter((d): d is number => typeof d === 'number'),
     ),
   ];
-  const paydayDays = configuredDays.length > 0 ? configuredDays : [15, 31];
+  const paydayDays = configuredDays.length > 0 ? configuredDays : [1, 15];
 
   const planned: PlannedNotification[] = [
     ...buildPaydayReminders(now, paydayDays, PAYDAY_WINDOW),
