@@ -2,16 +2,16 @@
  * Presupuesto de UNA quincena real (no dividir el mes entre 2).
  *
  * - Ingresos: ocurrencias cuyo `occurred_at` cae en [startDate, endDate].
- * - Gastos fijos: cada gasto mensual activo se AMORTIZA — su provisión de esta
- *   quincena = monto repartido entre las quincenas que faltan hasta su cobro
- *   (regla confirmada con el dueño; ver features/cycle/expense.ts).
+ * - Gastos fijos: cada gasto mensual activo se reparte 50/50 entre las dos
+ *   quincenas del mes (regla confirmada con el dueño). Si ya está pagado este
+ *   mes, su provisión es 0 (no queda nada por apartar).
  * - Gastos variables: los del rango de fechas de la quincena.
  * - Metas: `goalsReserveAmount` lo pasa el caller (suma de cuotas sugeridas).
  */
-import { parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 import { getQuincena, type Quincena } from '@/features/cycle/cycle';
-import { monthlyExpenseProvision } from '@/features/cycle/expense';
+import { nextMonthlyDue } from '@/features/cycle/expense';
 import { getGoalsReserve } from '@/features/goals/repository';
 import { getDb } from '@/shared/db';
 
@@ -110,15 +110,18 @@ export async function getQuincenaBudget(
     period,
   );
 
+  // Cada gasto fijo mensual se reparte 50/50 entre las dos quincenas del mes.
+  // El día de cobro se conserva solo para mostrarlo en el desglose.
   const expenseProvisions: ExpenseProvisionRow[] = fixedRows.map((e) => {
     const isPaid = e.paid === 1;
-    const prov = monthlyExpenseProvision(e.amount_cents, e.due_day, from);
+    const perQuincenaCents = Math.round(e.amount_cents / 2);
+    const due = format(nextMonthlyDue(from, e.due_day), 'yyyy-MM-dd');
     return {
       id: e.id,
       name: e.name,
-      amountCents: isPaid ? 0 : prov.perQuincenaCents,
-      due: prov.due,
-      quincenasSpan: prov.quincenasSpan,
+      amountCents: isPaid ? 0 : perQuincenaCents,
+      due,
+      quincenasSpan: 2,
       paid: isPaid,
     };
   });

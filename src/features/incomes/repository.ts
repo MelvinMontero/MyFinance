@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { randomUUID } from 'expo-crypto';
 
 import { getDb } from '@/shared/db';
@@ -124,13 +125,18 @@ export async function getIncome(id: string): Promise<Income | null> {
 }
 
 /**
- * Actualiza campos del ingreso. NO regenera ocurrencias —
- * si el usuario cambia frecuencia o fechas, las ocurrencias futuras quedan
- * con los valores viejos. Decisión consciente (Fase 2 simple); en Fase 5+
- * podemos exponer un "regenerar futuras" como acción explícita.
+ * Actualiza campos del ingreso. Si cambia el CALENDARIO de pagos (start_date,
+ * end_date, payday_1 o payday_2), reproyecta las ocurrencias futuras SIN
+ * confirmar: borra las pendientes de hoy en adelante y las regenera con el
+ * nuevo calendario. Las ocurrencias pasadas y las ya CONFIRMADAS (dinero ya
+ * recibido) nunca se tocan. Cambiar solo monto/fuente/nota no reproyecta.
  */
 export async function updateIncome(id: string, patch: UpdateIncomeInput): Promise<void> {
   const db = await getDb();
+
+  const existing = await getIncome(id);
+  if (!existing) return;
+
   const sets: string[] = [];
   const args: (string | number | null)[] = [];
 
@@ -176,7 +182,59 @@ export async function updateIncome(id: string, patch: UpdateIncomeInput): Promis
   args.push(new Date().toISOString());
   args.push(id);
 
-  await db.runAsync(`UPDATE incomes SET ${sets.join(', ')} WHERE id = ?`, ...args);
+  // ¿Cambió el calendario de pagos? Entonces hay que reproyectar las
+  // ocurrencias futuras sin confirmar con el nuevo calendario.
+  const scheduleChanged =
+    (patch.start_date !== undefined && patch.start_date !== existing.start_date) ||
+    (patch.end_date !== undefined && (patch.end_date ?? null) !== existing.end_date) ||
+    (patch.payday_1 !== undefined && (patch.payday_1 ?? null) !== existing.payday_1) ||
+    (patch.payday_2 !== undefined && (patch.payday_2 ?? null) !== existing.payday_2);
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(`UPDATE incomes SET ${sets.join(', ')} WHERE id = ?`, ...args);
+    if (!scheduleChanged) return;
+
+    const updated = await db.getFirstAsync<Income>('SELECT * FROM incomes WHERE id = ?', id);
+    if (!updated) return;
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+
+    // Borra solo las futuras SIN confirmar; conserva el historial y lo confirmado.
+    await db.runAsync(
+      'DELETE FROM income_occurrences WHERE income_id = ? AND is_confirmed = 0 AND occurred_at >= ?',
+      id,
+      today,
+    );
+
+    // Fechas que sobreviven (pasadas o confirmadas): no las dupliques al regenerar.
+    const kept = await db.getAllAsync<{ occurred_at: string }>(
+      'SELECT occurred_at FROM income_occurrences WHERE income_id = ?',
+      id,
+    );
+    const keptDates = new Set(kept.map((r) => r.occurred_at));
+
+    const now = new Date().toISOString();
+    const fresh = generateOccurrences(updated, {
+      generateId: () => randomUUID(),
+      now,
+      monthsAhead: 12,
+    });
+
+    for (const occ of fresh) {
+      if (occ.occurred_at < today) continue; // no recrear el pasado
+      if (keptDates.has(occ.occurred_at)) continue; // ya existe (confirmada)
+      await db.runAsync(
+        `INSERT INTO income_occurrences (id, income_id, amount_cents, occurred_at, is_confirmed, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        occ.id,
+        occ.income_id,
+        occ.amount_cents,
+        occ.occurred_at,
+        occ.is_confirmed,
+        occ.created_at,
+      );
+    }
+  });
 }
 
 /**

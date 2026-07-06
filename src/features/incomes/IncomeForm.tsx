@@ -45,8 +45,8 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
       start_date: today,
       end_date: '',
       note: '',
-      payday_1: 15,
-      payday_2: 30,
+      payday_1: 1,
+      payday_2: 15,
       ...defaultValues,
     },
   });
@@ -270,7 +270,7 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
                       <TextInput
                         className="flex-1 text-xl font-semibold text-gray-900 dark:text-gray-100"
                         keyboardType="number-pad"
-                        placeholder={idx === 0 ? '15' : '30'}
+                        placeholder={idx === 0 ? '1' : '15'}
                         placeholderTextColor="#cbd5e1"
                         maxLength={2}
                         value={value ? String(value) : ''}
@@ -286,7 +286,8 @@ export function IncomeForm({ defaultValues, onSubmit, submitLabel }: Props) {
             ))}
           </View>
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Ej. 15 y 30. Si el mes no tiene ese día, se usa el último.
+            Ej. 1 y 15. Si te pagan a fin de mes, anotá el día 1: ese pago cuenta
+            para la quincena que arranca, no para el mes que ya pasó.
           </Text>
           {errors.payday_1 && (
             <Text className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.payday_1.message}</Text>
