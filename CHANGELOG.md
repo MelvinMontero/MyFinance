@@ -2,6 +2,16 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) — fechas YYYY-MM-DD.
 
+## [0.9.3] - 2026-07-07 — El pago de la quincena en curso siempre existe
+
+### Fixed
+- **El salario recién creado no aparecía en la quincena en curso.** El generador creaba ocurrencias solo DESDE la fecha de inicio: registrar el salario el 7 (con pago el 1) dejaba la quincena actual sin ocurrencia → nada que confirmar → balance en 0 aunque marcaras el pago desde el detalle. Ahora la serie cubre desde el **inicio de la quincena** de la fecha de inicio: el pago del 1 se genera aunque el ingreso se registre el 7.
+- **Reproyección al editar**: al cambiar días de pago/fechas, las ocurrencias se regeneran desde el inicio de la **quincena en curso** (no desde hoy) — el pago del 1 reaparece si el nuevo calendario lo incluye.
+
+### Changed — Reportes
+- **Gráfico mensual: pastel clásico** (sin hueco) con **porcentaje sobre cada tajada** y **leyenda con los nombres de categoría** debajo; el total gastado se muestra como número grande sobre el gráfico.
+- **Gráfico anual: las barras ya no se cortan** — con 12 meses ahora se desliza horizontal, el eje Y usa montos compactos (180000 → "180k") y las barras son más anchas y legibles.
+
 ## [0.9.2] - 2026-07-06 — Correcciones de auditoría
 
 > Auditoría exhaustiva del sistema (capa de datos, lógica pura y pantallas)

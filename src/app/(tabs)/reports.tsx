@@ -229,39 +229,47 @@ function MonthlyView({
     );
   }
 
-  // Para el donut, gifted-charts toma `value` como número arbitrario.
-  // Le pasamos colones (cents/100) para que las proporciones se mantengan
-  // y los números sean razonables.
-  const pieData = breakdown.map((c) => ({
-    value: fromCents(c.amount_cents),
-    color: c.color,
-    text: '',
-  }));
+  // Gráfico de PASTEL clásico: tajada por categoría con su porcentaje encima
+  // (solo en tajadas ≥ 8% para que el texto no se encime) y leyenda con
+  // nombres debajo. `value` va en colones (cents/100) — las proporciones se
+  // mantienen y los números son razonables.
+  const pieData = breakdown.map((c) => {
+    const pct = total > 0 ? Math.round((c.amount_cents / total) * 100) : 0;
+    return {
+      value: fromCents(c.amount_cents),
+      color: c.color,
+      text: pct >= 8 ? `${pct}%` : '',
+    };
+  });
 
   return (
     <>
-      {/* DONUT */}
+      {/* PASTEL */}
       <View className="mt-6 items-center rounded-2xl bg-white dark:bg-gray-900 p-5">
         <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Distribución por categoría
         </Text>
+        <Text className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {formatCents(total, { currency })}
+        </Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400">gastado en extras este mes</Text>
         <View className="my-4">
           <PieChart
             data={pieData}
-            donut
             radius={110}
-            innerRadius={70}
-            centerLabelComponent={() => (
-              <View className="items-center">
-                <Text className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  Total
-                </Text>
-                <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {formatCents(total, { currency })}
-                </Text>
-              </View>
-            )}
+            showText
+            textColor="#ffffff"
+            textSize={13}
+            fontWeight="bold"
+            labelsPosition="mid"
           />
+        </View>
+        {/* Leyenda: nombre + porcentaje de cada categoría */}
+        <View className="flex-row flex-wrap justify-center gap-x-4 gap-y-2">
+          {breakdown.map((c) => {
+            const pct = total > 0 ? Math.round((c.amount_cents / total) * 100) : 0;
+            return <LegendItem key={c.category_id} color={c.color} label={`${c.name} ${pct}%`} />;
+          })}
         </View>
       </View>
 
@@ -352,25 +360,38 @@ function YearlyView({
 
   return (
     <>
-      {/* STACKED BARS */}
+      {/* BARRAS APILADAS */}
       <View className="mt-6 rounded-2xl bg-white dark:bg-gray-900 p-5">
         <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Distribución mensual del año
         </Text>
-        <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ahorro · Fijos · Variables</Text>
+        <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Ahorro · Fijos · Variables — deslizá para ver los 12 meses
+        </Text>
         <View className="mt-4 -mx-2">
           <BarChart
             stackData={stackData}
-            barWidth={18}
-            spacing={6}
+            barWidth={22}
+            spacing={10}
             initialSpacing={8}
-            yAxisLabelWidth={48}
+            yAxisLabelWidth={36}
+            // Eje Y compacto (180000 → "180k") para que las barras respiren.
+            formatYLabel={(label: string) => {
+              const n = Number(label);
+              if (!Number.isFinite(n) || n === 0) return '0';
+              return n >= 1_000_000
+                ? `${(n / 1_000_000).toFixed(1)}M`
+                : n >= 1000
+                  ? `${Math.round(n / 1000)}k`
+                  : String(n);
+            }}
             xAxisLabelTextStyle={{ color: '#64748b', fontSize: 10 }}
             yAxisTextStyle={{ color: '#64748b', fontSize: 10 }}
             noOfSections={4}
             yAxisThickness={0}
             xAxisThickness={0}
-            disableScroll
+            // Sin disableScroll: con 12 meses el gráfico se cortaba en
+            // pantallas normales; ahora se desliza horizontal.
           />
         </View>
         <View className="mt-4 flex-row flex-wrap gap-3">
