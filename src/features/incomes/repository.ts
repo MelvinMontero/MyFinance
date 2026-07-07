@@ -9,7 +9,7 @@ import type {
   SqliteBoolean,
 } from '@/shared/db/types';
 
-import { generateOccurrences } from './occurrences';
+import { generateOccurrences, paydatesInQuincena } from './occurrences';
 
 export interface NewIncomeInput {
   amount_cents: number;
@@ -229,7 +229,7 @@ export async function updateIncome(id: string, patch: UpdateIncomeInput): Promis
       if (occ.occurred_at < quincenaStart) continue; // no recrear quincenas pasadas
       if (keptDates.has(occ.occurred_at)) continue; // ya existe (confirmada)
       await db.runAsync(
-        `INSERT INTO income_occurrences (id, income_id, amount_cents, occurred_at, is_confirmed, created_at)
+        `INSERT OR IGNORE INTO income_occurrences (id, income_id, amount_cents, occurred_at, is_confirmed, created_at)
          VALUES (?, ?, ?, ?, ?, ?)`,
         occ.id,
         occ.income_id,
@@ -330,6 +330,42 @@ export async function overrideOccurrenceAmount(
     amount_cents,
     id,
   );
+}
+
+/**
+ * AUTO-REPARACIÓN: garantiza que cada ingreso activo tenga su ocurrencia de
+ * pago en la quincena EN CURSO. Repara huecos de series creadas/editadas con
+ * versiones viejas de la app, ingresos registrados a mitad de quincena y
+ * ventanas de proyección agotadas — sin pedirle nada al usuario.
+ *
+ * Idempotente y a prueba de carreras: INSERT OR IGNORE apoyado en el índice
+ * UNIQUE (income_id, occurred_at) de la migración v9. Las creadas quedan SIN
+ * confirmar (el usuario las marca cuando le paguen). Llamar al cargar el
+ * Inicio. Devuelve cuántas ocurrencias se crearon.
+ */
+export async function ensureCurrentQuincenaOccurrences(now: Date = new Date()): Promise<number> {
+  const db = await getDb();
+  const incomes = await db.getAllAsync<Income>(
+    "SELECT * FROM incomes WHERE is_active = 1 AND frequency IN ('biweekly', 'monthly')",
+  );
+
+  let created = 0;
+  const createdAt = new Date().toISOString();
+  for (const income of incomes) {
+    for (const dateStr of paydatesInQuincena(income, now)) {
+      const res = await db.runAsync(
+        `INSERT OR IGNORE INTO income_occurrences (id, income_id, amount_cents, occurred_at, is_confirmed, created_at)
+         VALUES (?, ?, ?, ?, 0, ?)`,
+        randomUUID(),
+        income.id,
+        income.amount_cents,
+        dateStr,
+        createdAt,
+      );
+      created += res.changes ?? 0;
+    }
+  }
+  return created;
 }
 
 export async function getIncomeCount(): Promise<number> {

@@ -195,4 +195,34 @@ export const migrations: Migration[] = [
         ON fixed_expense_payments(fixed_expense_id, period);
     `,
   },
+  {
+    version: 9,
+    description: 'unicidad de ocurrencias por (income, fecha) — habilita el backfill idempotente',
+    sql: `
+      -- Depurar duplicados históricos (bug de paydays que clampaban al mismo
+      -- día). Primero caen las SIN confirmar que duplican fecha...
+      DELETE FROM income_occurrences
+       WHERE is_confirmed = 0
+         AND EXISTS (
+           SELECT 1 FROM income_occurrences b
+            WHERE b.income_id = income_occurrences.income_id
+              AND b.occurred_at = income_occurrences.occurred_at
+              AND b.id != income_occurrences.id
+              AND (b.is_confirmed = 1 OR b.id < income_occurrences.id)
+         );
+      -- ...y si quedaran dos CONFIRMADAS el mismo día, se conserva una.
+      DELETE FROM income_occurrences
+       WHERE is_confirmed = 1
+         AND EXISTS (
+           SELECT 1 FROM income_occurrences b
+            WHERE b.income_id = income_occurrences.income_id
+              AND b.occurred_at = income_occurrences.occurred_at
+              AND b.is_confirmed = 1
+              AND b.id < income_occurrences.id
+         );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_income_occ_unique
+        ON income_occurrences(income_id, occurred_at);
+    `,
+  },
 ];

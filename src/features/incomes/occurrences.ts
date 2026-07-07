@@ -132,3 +132,54 @@ export function generateOccurrences(
 function minDate(a: Date, b: Date): Date {
   return a.getTime() < b.getTime() ? a : b;
 }
+
+type IncomeForPaydates = Pick<Income, 'frequency' | 'start_date' | 'end_date'> & {
+  payday_1?: number | null;
+  payday_2?: number | null;
+};
+
+/**
+ * Fechas de pago ('yyyy-MM-dd') de un ingreso que caen en la QUINCENA de
+ * `reference`. FUNCIÓN PURA — la usa el backfill de auto-reparación: si la
+ * serie proyectada tiene un hueco (ingreso creado/editado a mitad de
+ * quincena, versión vieja de la app, ventana de 12 meses agotada), estas son
+ * las ocurrencias que deberían existir para poder confirmar el pago.
+ *
+ * Reglas:
+ * - 'biweekly' con paydays: los días configurados, clampados a fin de mes y
+ *   deduplicados (28 y 30 en febrero son UN pago).
+ * - 'monthly': el día del mes de start_date (clampado).
+ * - 'one_time' y biweekly legacy (cada 14 días): [] — sus fechas no derivan
+ *   de días del mes, no hay backfill seguro.
+ * - Respeta el inicio de la serie (la quincena de start_date) y end_date.
+ */
+export function paydatesInQuincena(
+  income: IncomeForPaydates,
+  reference: Date | string,
+): string[] {
+  const q = getQuincena(typeof reference === 'string' ? parseISO(reference) : reference);
+
+  let days: number[];
+  if (income.frequency === 'biweekly') {
+    days = [income.payday_1, income.payday_2].filter(
+      (d): d is number => typeof d === 'number' && d >= 1 && d <= 31,
+    );
+    if (days.length === 0) return [];
+  } else if (income.frequency === 'monthly') {
+    days = [Number(income.start_date.slice(8, 10))];
+  } else {
+    return [];
+  }
+
+  const year = Number(q.period.slice(0, 4));
+  const month1 = Number(q.period.slice(5, 7)); // 1-based
+  const daysInMonth = new Date(year, month1, 0).getDate();
+  const seriesStart = getQuincena(parseISO(income.start_date)).startDate;
+
+  return [...new Set(days.map((d) => Math.min(d, daysInMonth)))]
+    .map((d) => `${q.period}-${String(d).padStart(2, '0')}`)
+    .filter((date) => date >= q.startDate && date <= q.endDate)
+    .filter((date) => date >= seriesStart)
+    .filter((date) => !income.end_date || date <= income.end_date)
+    .sort();
+}

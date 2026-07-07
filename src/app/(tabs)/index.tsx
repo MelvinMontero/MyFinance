@@ -23,6 +23,7 @@ import {
 } from '@/features/goals/repository';
 import { IncomeConfirmCard } from '@/features/incomes/IncomeConfirmCard';
 import {
+  ensureCurrentQuincenaOccurrences,
   listOccurrencesInRange,
   setOccurrenceConfirmed,
   type OccurrenceWithSource,
@@ -65,6 +66,11 @@ export default function HomeScreen() {
         const period = currentPeriod();
         const today = new Date();
         const quincena = getQuincena(today);
+
+        // Auto-reparación: si la quincena en curso debería tener un pago y la
+        // ocurrencia no existe (serie vieja, ingreso creado a mitad de
+        // quincena, ventana agotada), se crea acá — sin confirmar.
+        await ensureCurrentQuincenaOccurrences(today);
 
         // Mostramos TODAS las metas en el Inicio. Las que están en otra moneda
         // se convierten a la moneda activa con la tasa aproximada (₡/$), para

@@ -1,4 +1,4 @@
-import { generateOccurrences } from './occurrences';
+import { generateOccurrences, paydatesInQuincena } from './occurrences';
 import type { Income } from '@/shared/db/types';
 
 // Generador de IDs deterministas para tests
@@ -365,5 +365,56 @@ describe('generateOccurrences — metadata', () => {
     for (const occ of result) {
       expect(occ.amount_cents).toBe(250_000);
     }
+  });
+});
+
+describe('paydatesInQuincena — backfill de la quincena en curso', () => {
+  const biweekly = (over: Partial<Income> = {}) =>
+    income({ frequency: 'biweekly', start_date: '2026-06-23', payday_1: 1, payday_2: 15, ...over });
+
+  it('caso real del bug: serie editada sin la ocurrencia del 1 de julio', () => {
+    // Salario creado el 23-jun con paydays viejos, editado a 1/15. Hoy 7-jul
+    // (Q1): la fecha que DEBE existir en esta quincena es el 1 de julio.
+    expect(paydatesInQuincena(biweekly(), '2026-07-07')).toEqual(['2026-07-01']);
+  });
+
+  it('en Q2 devuelve el pago del 15', () => {
+    expect(paydatesInQuincena(biweekly(), '2026-07-20')).toEqual(['2026-07-15']);
+  });
+
+  it('clampa y deduplica en meses cortos (30 y 31 en febrero → un solo 28)', () => {
+    expect(
+      paydatesInQuincena(
+        biweekly({ start_date: '2026-01-01', payday_1: 30, payday_2: 31 }),
+        '2026-02-20',
+      ),
+    ).toEqual(['2026-02-28']);
+  });
+
+  it('no crea pagos anteriores a la quincena de start_date', () => {
+    // Ingreso arranca el 20-jul (Q2): visto desde el 7-jul (Q1) no hay nada.
+    expect(paydatesInQuincena(biweekly({ start_date: '2026-07-20' }), '2026-07-07')).toEqual([]);
+  });
+
+  it('respeta end_date', () => {
+    expect(
+      paydatesInQuincena(biweekly({ end_date: '2026-07-10' }), '2026-07-20'),
+    ).toEqual([]);
+  });
+
+  it('monthly usa el día del mes de start_date', () => {
+    const m = income({ frequency: 'monthly', start_date: '2026-01-05' });
+    expect(paydatesInQuincena(m, '2026-07-07')).toEqual(['2026-07-05']);
+    expect(paydatesInQuincena(m, '2026-07-20')).toEqual([]); // día 5 no cae en Q2
+  });
+
+  it('one_time y biweekly legacy (sin paydays) devuelven []', () => {
+    expect(paydatesInQuincena(income({ frequency: 'one_time' }), '2026-07-07')).toEqual([]);
+    expect(
+      paydatesInQuincena(
+        income({ frequency: 'biweekly', payday_1: null, payday_2: null }),
+        '2026-07-07',
+      ),
+    ).toEqual([]);
   });
 });

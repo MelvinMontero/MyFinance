@@ -2,6 +2,12 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) — fechas YYYY-MM-DD.
 
+## [0.9.4] - 2026-07-07 — Auto-reparación de la quincena en curso
+
+### Fixed
+- **Series de ingreso con huecos se reparan SOLAS.** Los salarios creados o editados con versiones anteriores quedaban sin la ocurrencia de la quincena en curso (ej. sin el pago del 1 de julio: la serie saltaba del 30-jun al 15-jul) y ningún fix retroactivo los tocaba — el balance seguía en 0 aunque confirmaras pagos de otras quincenas. Ahora, al abrir el Inicio, un **backfill automático** crea la ocurrencia de pago que falte en la quincena actual (sin confirmar, lista para marcar). Cubre series viejas, ingresos creados a mitad de quincena y ventanas de proyección agotadas — sin borrar ni recrear nada a mano.
+- **Migración v9**: índice UNIQUE (ingreso, fecha) en ocurrencias, con depuración previa de duplicados históricos — el backfill es idempotente y a prueba de carreras.
+
 ## [0.9.3] - 2026-07-07 — El pago de la quincena en curso siempre existe
 
 ### Fixed
