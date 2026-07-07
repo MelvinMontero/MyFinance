@@ -86,6 +86,43 @@ describe('generateOccurrences — biweekly con días de pago configurados', () =
     expect(result.map((o) => o.occurred_at)).toEqual(['2026-04-30', '2026-05-30', '2026-05-31']);
   });
 
+  it('incluye el pago de la QUINCENA de start_date aunque ya haya pasado (bug balance en 0)', () => {
+    // Usuario registra su salario el 7 de julio (Q1 = 1–14) con pagos 1 y 15:
+    // la ocurrencia del 1 de julio es de SU quincena en curso y debe generarse
+    // para poder confirmarla — antes la primera era la del 15 y Q1 quedaba vacía.
+    const result = generateOccurrences(
+      income({
+        frequency: 'biweekly',
+        start_date: '2026-07-07',
+        end_date: '2026-08-31',
+        payday_1: 1,
+        payday_2: 15,
+      }),
+      { generateId: makeIdGen(), now: FIXED_NOW },
+    );
+    expect(result.map((o) => o.occurred_at)).toEqual([
+      '2026-07-01', // ← el pago de la quincena en curso, aunque start_date sea el 7
+      '2026-07-15',
+      '2026-08-01',
+      '2026-08-15',
+    ]);
+  });
+
+  it('start_date en Q2 (día 20) incluye el pago del 15 de esa quincena', () => {
+    const result = generateOccurrences(
+      income({
+        frequency: 'biweekly',
+        start_date: '2026-07-20',
+        end_date: '2026-07-31',
+        payday_1: 1,
+        payday_2: 15,
+      }),
+      { generateId: makeIdGen(), now: FIXED_NOW },
+    );
+    // NO incluye el 1 de julio (quincena anterior); SÍ el 15 (quincena de start).
+    expect(result.map((o) => o.occurred_at)).toEqual(['2026-07-15']);
+  });
+
   it('días de pago 1 y 15 (default nuevo) generan una ocurrencia por quincena', () => {
     const result = generateOccurrences(
       income({

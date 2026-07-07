@@ -1,5 +1,6 @@
 import { addDays, addMonths, format, isAfter, parseISO } from 'date-fns';
 
+import { getQuincena } from '@/features/cycle/cycle';
 import type { Income, IncomeOccurrence, SqliteBoolean } from '@/shared/db/types';
 
 export interface GenerateOccurrencesOptions {
@@ -72,13 +73,18 @@ export function generateOccurrences(
     return [build(startDate)];
   }
 
-  // Quincenal con días de pago configurados (ej. 15 y 30): ocurrencias en esos
+  // Quincenal con días de pago configurados (ej. 1 y 15): ocurrencias en esos
   // días de cada mes, recortando al último día si el mes es más corto.
   if (income.frequency === 'biweekly') {
     const days = [...new Set([income.payday_1, income.payday_2])]
       .filter((d): d is number => typeof d === 'number' && d >= 1 && d <= 31)
       .sort((a, b) => a - b);
     if (days.length > 0) {
+      // La serie cubre desde el INICIO DE LA QUINCENA de start_date, no desde
+      // start_date exacto: si el usuario registra su salario el 7 con pago el
+      // 1, la ocurrencia del 1 pertenece a SU quincena en curso y debe existir
+      // para poder confirmarla (si no, el balance de esa quincena queda en 0).
+      const seriesStart = parseISO(getQuincena(startDate).startDate);
       const result: IncomeOccurrence[] = [];
       let year = startDate.getFullYear();
       let month = startDate.getMonth();
@@ -91,7 +97,7 @@ export function generateOccurrences(
         const clampedDays = [...new Set(days.map((d) => Math.min(d, daysInMonth)))];
         for (const d of clampedDays) {
           const date = new Date(year, month, d);
-          if (!isAfter(startDate, date) && !isAfter(date, windowEnd)) {
+          if (!isAfter(seriesStart, date) && !isAfter(date, windowEnd)) {
             result.push(build(date));
           }
         }

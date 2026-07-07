@@ -1,6 +1,6 @@
-import { format } from 'date-fns';
 import { randomUUID } from 'expo-crypto';
 
+import { getQuincena } from '@/features/cycle/cycle';
 import { getDb } from '@/shared/db';
 import type {
   Income,
@@ -197,13 +197,18 @@ export async function updateIncome(id: string, patch: UpdateIncomeInput): Promis
     const updated = await db.getFirstAsync<Income>('SELECT * FROM incomes WHERE id = ?', id);
     if (!updated) return;
 
-    const today = format(new Date(), 'yyyy-MM-dd');
+    // Se reproyecta desde el INICIO de la quincena EN CURSO (no desde hoy):
+    // si hoy es 7 y el nuevo calendario paga el 1, la ocurrencia del 1 es de
+    // esta quincena y debe regenerarse para poder confirmarla. Lo anterior a
+    // esta quincena no se toca.
+    const quincenaStart = getQuincena(new Date()).startDate;
 
-    // Borra solo las futuras SIN confirmar; conserva el historial y lo confirmado.
+    // Borra solo las SIN confirmar de esta quincena en adelante; conserva el
+    // historial anterior y todo lo confirmado (dinero ya recibido).
     await db.runAsync(
       'DELETE FROM income_occurrences WHERE income_id = ? AND is_confirmed = 0 AND occurred_at >= ?',
       id,
-      today,
+      quincenaStart,
     );
 
     // Fechas que sobreviven (pasadas o confirmadas): no las dupliques al regenerar.
@@ -221,7 +226,7 @@ export async function updateIncome(id: string, patch: UpdateIncomeInput): Promis
     });
 
     for (const occ of fresh) {
-      if (occ.occurred_at < today) continue; // no recrear el pasado
+      if (occ.occurred_at < quincenaStart) continue; // no recrear quincenas pasadas
       if (keptDates.has(occ.occurred_at)) continue; // ya existe (confirmada)
       await db.runAsync(
         `INSERT INTO income_occurrences (id, income_id, amount_cents, occurred_at, is_confirmed, created_at)
